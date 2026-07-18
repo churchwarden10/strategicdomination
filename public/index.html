@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Strategic Conquest</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --blue: #1f6feb;
+    --blue-light: #58a6ff;
+    --red: #da3633;
+    --red-light: #f85149;
+    --green: #238636;
+    --green-light: #3fb950;
+    --ocean: #0d2b4b;
+    --land: #2d5a27;
+    --city-n: #555;
+    --fog: #111;
+    --gold: #d29922;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; flex-direction: column; height: 100%; }
+  .screen.active { display: flex; }
+
+  /* ── Lobby ── */
+  #lobby {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  .logo {
+    text-align: center;
+  }
+  .logo h1 {
+    font-size: clamp(1.6rem, 5vw, 2.8rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--blue-light), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -1px;
+  }
+  .logo p {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 4px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .card h2 { font-size: 1rem; margin-bottom: 14px; color: var(--text); }
+
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  .form-group input, .form-group select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 1rem;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--blue);
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { opacity: 0.75; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-ghost { background: var(--border); color: var(--text); }
+
+  .room-code-display {
+    background: var(--bg);
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    text-align: center;
+    padding: 14px;
+    margin: 12px 0;
+  }
+  .room-code-display .label { font-size: 0.75rem; color: var(--muted); }
+  .room-code-display .code {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: 8px;
+    color: var(--gold);
+    font-family: monospace;
+  }
+
+  .how-to-play {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .how-to-play h3 { color: var(--text); margin-bottom: 6px; font-size: 0.85rem; }
+  .how-to-play ul { padding-left: 16px; }
+  .how-to-play li { margin-bottom: 4px; }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 400px;
+    width: 100%;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .divider span { color: var(--muted); font-size: 0.8rem; }
+
+  /* ── Game Screen ── */
+  #game {
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  #topbar {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+  }
+  #topbar .room { font-family: monospace; color: var(--gold); font-weight: 700; }
+  #topbar .turn-info { color: var(--muted); }
+  #topbar .timer { font-weight: 700; color: var(--blue-light); margin-left: auto; }
+  .player-badge {
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .p1 { background: var(--blue); color: #fff; }
+  .p2 { background: var(--red); color: #fff; }
+
+  #map-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    touch-action: none;
+  }
+
+  #map-canvas {
+    display: block;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #sidebar {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 8px 10px;
+    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    flex-wrap: wrap;
+    min-height: 90px;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+
+  .info-block {
+    flex: 1;
+    min-width: 120px;
+    font-size: 0.78rem;
+  }
+  .info-block .label { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .info-block .value { color: var(--text); margin-top: 2px; }
+
+  #prod-select-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 2;
+    min-width: 160px;
+  }
+  #prod-select-wrap label { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; }
+  #prod-select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 5px 8px;
+    font-size: 0.82rem;
+    -webkit-appearance: none;
+  }
+
+  #end-turn-btn {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    border-radius: 8px;
+    border: none;
+    background: var(--green);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    align-self: center;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #end-turn-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  #end-turn-btn.done { background: var(--muted); }
+
+  /* ── End screen ── */
+  #endscreen {
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px;
+  }
+  #endscreen h1 { font-size: 2rem; }
+  #win-msg { color: var(--muted); }
+
+  /* ── Waiting ── */
+  #waiting-msg {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  #msg-toast {
+    position: fixed;
+    bottom: 160px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    z-index: 100;
+    display: none;
+    pointer-events: none;
+  }
+
+  /* Legend */
+  #legend {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.7rem;
+    color: var(--muted);
+    flex-shrink: 0;
+    padding: 0 10px 4px;
+    background: var(--panel);
+  }
+  .legend-item { display: flex; align-items: center; gap: 3px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<!-- Lobby Screen -->
+<div id="lobby" class="screen active">
+  <div class="logo">
+    <h1>⚔️ Strategic Conquest</h1>
+    <p>Turn-based multiplayer strategy</p>
+  </div>
+
+  <div class="card">
+    <h2>Create or Join a Game</h2>
+    <div class="form-group">
+      <label>Your Name</label>
+      <input id="player-name" type="text" placeholder="Commander" maxlength="16">
+    </div>
+    <button class="btn btn-primary" onclick="createGame()">Create New Game</button>
+  </div>
+
+  <div id="create-waiting" style="display:none; width:100%; max-width:400px;">
+    <div class="room-code-display">
+      <div class="label">Share this code with Player 2</div>
+      <div class="code" id="room-code-display">----</div>
+    </div>
+    <div id="waiting-msg">Waiting for opponent to join…</div>
+  </div>
+
+  <div class="divider"><span>or</span></div>
+
+  <div class="card">
+    <h2>Join a Game</h2>
+    <div class="form-group">
+      <label>Room Code</label>
+      <input id="join-code" type="text" placeholder="ABCD" maxlength="4" style="text-transform:uppercase; letter-spacing:4px; font-size:1.2rem; text-align:center;">
+    </div>
+    <button class="btn btn-red" onclick="joinGame()">Join Game</button>
+  </div>
+
+  <div class="card how-to-play">
+    <h3>How to Play</h3>
+    <ul>
+      <li><strong>Goal:</strong> Capture all enemy cities to win.</li>
+      <li><strong>Armies</strong> capture cities by moving onto them.</li>
+      <li><strong>Select:</strong> Tap a unit to select it (highlighted).</li>
+      <li><strong>Move:</strong> Tap a destination tile to move the selected unit.</li>
+      <li><strong>Production:</strong> Tap a city you own to set what it builds.</li>
+      <li><strong>Turns:</strong> Every 30s auto-advances, or click End Turn early.</li>
+      <li><strong>Combat:</strong> Move onto an enemy unit — attacker wins 60% of the time.</li>
+      <li><strong>Fog of War:</strong> You only see tiles near your units/cities.</li>
+      <li><strong>Fuel:</strong> Fighters (20 moves) and Bombers (10 moves) crash if they run out!</li>
+    </ul>
+    <div style="margin-top:10px">
+      <strong>Units you can build:</strong>
+      🪖Army (5t) ✈️Fighter (3t) 🚢Destroyer (6t) 🤿Sub (8t) ⛴️Transport (8t) 🛳️Carrier (12t) ⚓Battleship (14t) 💣Bomber (5t)
+    </div>
+  </div>
+</div>
+
+<!-- Game Screen -->
+<div id="game" class="screen">
+  <div id="topbar">
+    <span class="room">Room: <span id="tb-room">----</span></span>
+    <span class="player-badge" id="tb-player">P1</span>
+    <span class="turn-info">Turn <span id="tb-turn">1</span></span>
+    <span id="tb-score"></span>
+    <span class="timer" id="tb-timer">0:30</span>
+  </div>
+
+  <div id="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:#0d2b4b;border:1px solid #1f6feb"></span>Ocean</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#2d5a27"></span>Land</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#555"></span>City (neutral)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#1f6feb"></span>Your city</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#da3633"></span>Enemy city</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#222"></span>Fog</span>
+  </div>
+
+  <div id="map-container">
+    <canvas id="map-canvas"></canvas>
+  </div>
+
+  <div id="sidebar">
+    <div class="info-block" id="unit-info">
+      <div class="label">Selected Unit</div>
+      <div class="value" id="unit-details">None</div>
+    </div>
+    <div id="prod-select-wrap" style="display:none">
+      <label>City Production</label>
+      <select id="prod-select" onchange="setProduction()">
+        <option value="">-- Select --</option>
+        <option value="army">🪖 Army (5t)</option>
+        <option value="fighter">✈️ Fighter (3t)</option>
+        <option value="destroyer">🚢 Destroyer (6t)</option>
+        <option value="submarine">🤿 Submarine (8t)</option>
+        <option value="transport">⛴️ Transport (8t)</option>
+        <option value="carrier">🛳️ Carrier (12t)</option>
+        <option value="battleship">⚓ Battleship (14t)</option>
+        <option value="bomber">💣 Bomber (5t)</option>
+      </select>
+    </div>
+    <button id="end-turn-btn" onclick="endTurn()">End Turn</button>
+  </div>
+</div>
+
+<!-- End Screen -->
+<div id="endscreen" class="screen">
+  <h1 id="end-icon">🏆</h1>
+  <h2 id="end-title">Game Over</h2>
+  <p id="win-msg"></p>
+  <button class="btn btn-primary" onclick="location.reload()" style="max-width:200px">Play Again</button>
+</div>
+
+<div id="msg-toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+var socket = io();
+var myRoom = null;
+var myPlayerNum = null;
+var gameState = null;
+var selectedUnit = null;
+var selectedCityPos = null;
+var turnTimer = null;
+
+// Camera / pan+zoom state
+var cam = { x: 0, y: 0, scale: 12, isDragging: false, lastTX: 0, lastTY: 0 };
+var pinchDist0 = null, pinchScale0 = null;
+
+var TILE = 12; // base tile size in px (will be overridden by cam.scale)
+var MAP_W = 40, MAP_H = 40;
+
+// ── Socket events ──────────────────────────────────────────────────────────
+socket.on('gameCreated', function(data) {
+  myRoom = data.roomCode;
+  myPlayerNum = data.playerNum;
+  document.getElementById('room-code-display').textContent = data.roomCode;
+  document.getElementById('create-waiting').style.display = 'block';
+});
+
+socket.on('gameJoined', function(data) {
+  myRoom = data.roomCode;
+  myPlayerNum = data.playerNum;
+  showGame();
+});
+
+socket.on('stateUpdate', function(state) {
+  gameState = state;
+  if (state.phase === 'playing' || state.phase === 'ended') {
+    showGame();
+    render();
+    updateHUD();
+    if (state.phase === 'ended') showEndScreen(state);
+  }
+});
+
+socket.on('error', function(msg) {
+  showToast(msg);
+});
+
+socket.on('moveError', function(msg) {
+  showToast(msg);
+});
+
+socket.on('opponentDisconnected', function() {
+  showToast('Opponent disconnected');
+});
+
+// ── Lobby actions ──────────────────────────────────────────────────────────
+function createGame() {
+  var name = document.getElementById('player-name').value.trim() || 'Commander';
+  socket.emit('createGame', { name: name });
+}
+
+function joinGame() {
+  var code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!code || code.length !== 4) { showToast('Enter a 4-letter room code'); return; }
+  var name = document.getElementById('player-name').value.trim() || 'Commander';
+  socket.emit('joinGame', { roomCode: code, name: name });
+}
+
+// ── Screen management ──────────────────────────────────────────────────────
+function showGame() {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('game').classList.add('active');
+  initCanvas();
+}
+
+function showEndScreen(state) {
+  setTimeout(function() {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('endscreen').classList.add('active');
+    var isWinner = state.winner === myPlayerNum;
+    document.getElementById('end-icon').textContent = isWinner ? '🏆' : '💀';
+    document.getElementById('end-title').textContent = isWinner ? 'Victory!' : 'Defeat';
+    document.getElementById('win-msg').textContent = isWinner
+      ? 'You conquered all enemy cities!' : 'Your empire has fallen.';
+  }, 500);
+}
+
+// ── Canvas setup ──────────────────────────────────────────────────────────
+var canvas, ctx;
+
+function initCanvas() {
+  canvas = document.getElementById('map-canvas');
+  ctx = canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Mouse events
+  canvas.addEventListener('mousedown', onPointerDown);
+  canvas.addEventListener('mousemove', onPointerMove);
+  canvas.addEventListener('mouseup', onPointerUp);
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+  canvas.addEventListener('click', onCanvasClick);
+
+  // Touch events
+  canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+  canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+
+  // Center camera on player start
+  centerCamera();
+}
+
+function resizeCanvas() {
+  var container = document.getElementById('map-container');
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+  render();
+}
+
+function centerCamera() {
+  if (!gameState || !myPlayerNum) return;
+  // Try to find a unit or city belonging to us
+  for (var i = 0; i < gameState.units.length; i++) {
+    var u = gameState.units[i];
+    if (u.owner === myPlayerNum) {
+      cam.x = u.x * cam.scale - canvas.width / 2;
+      cam.y = u.y * cam.scale - canvas.height / 2;
+      return;
+    }
+  }
+}
+
+// ── Rendering ──────────────────────────────────────────────────────────────
+var COLORS = {
+  fog:    '#111',
+  ocean:  '#0d2b4b',
+  land:   '#2d5a27',
+  cityN:  '#4a4a4a',
+  cityP1: '#1a3a6e',
+  cityP2: '#6e1a1a',
+  gridLine: 'rgba(255,255,255,0.04)',
+  p1Unit: '#1f6feb',
+  p2Unit: '#da3633',
+  selected: '#ffd700',
+};
+
+function worldToScreen(wx, wy) {
+  return {
+    x: wx * cam.scale - cam.x,
+    y: wy * cam.scale - cam.y,
+  };
+}
+
+function screenToWorld(sx, sy) {
+  return {
+    x: (sx + cam.x) / cam.scale,
+    y: (sy + cam.y) / cam.scale,
+  };
+}
+
+function render() {
+  if (!canvas || !ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (!gameState) return;
+
+  var ts = cam.scale;
+  var tiles = gameState.tiles;
+  var units = gameState.units;
+
+  // Compute visible tile range
+  var startX = Math.max(0, Math.floor(cam.x / ts));
+  var startY = Math.max(0, Math.floor(cam.y / ts));
+  var endX = Math.min(MAP_W - 1, Math.ceil((cam.x + canvas.width) / ts));
+  var endY = Math.min(MAP_H - 1, Math.ceil((cam.y + canvas.height) / ts));
+
+  // Draw tiles
+  for (var y = startY; y <= endY; y++) {
+    for (var x = startX; x <= endX; x++) {
+      var tile = tiles[y] && tiles[y][x];
+      if (!tile) continue;
+      var sx = Math.floor(x * ts - cam.x);
+      var sy = Math.floor(y * ts - cam.y);
+      var sw = Math.ceil(ts);
+      var sh = Math.ceil(ts);
+
+      if (tile.type === 'fog') {
+        ctx.fillStyle = COLORS.fog;
+        ctx.fillRect(sx, sy, sw, sh);
+        continue;
+      }
+
+      // Base terrain
+      if (tile.type === 'ocean') {
+        ctx.fillStyle = COLORS.ocean;
+      } else if (tile.type === 'land') {
+        ctx.fillStyle = COLORS.land;
+      } else if (tile.type === 'city') {
+        // Draw land base
+        ctx.fillStyle = COLORS.land;
+        ctx.fillRect(sx, sy, sw, sh);
+        // City overlay
+        var co = tile.city ? tile.city.owner : null;
+        ctx.fillStyle = co === 1 ? COLORS.cityP1 : co === 2 ? COLORS.cityP2 : COLORS.cityN;
+      }
+      ctx.fillRect(sx, sy, sw, sh);
+
+      // Grid lines
+      if (ts >= 8) {
+        ctx.strokeStyle = COLORS.gridLine;
+        ctx.strokeRect(sx + 0.5, sy + 0.5, sw - 1, sh - 1);
+      }
+
+      // City icon
+      if (tile.type === 'city' && ts >= 10) {
+        var fontSize = Math.floor(ts * 0.6);
+        ctx.font = fontSize + 'px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🏙️', sx + sw / 2, sy + sh / 2);
+      }
+
+      // City production indicator (small bar)
+      if (tile.type === 'city' && tile.city && tile.city.production && tile.city.owner === myPlayerNum && ts >= 8) {
+        var prog = tile.city.progress;
+        var total = getBuildTime(tile.city.production);
+        var barW = (sw - 2) * (prog / total);
+        ctx.fillStyle = 'rgba(255,215,0,0.6)';
+        ctx.fillRect(sx + 1, sy + sh - 3, barW, 2);
+      }
+    }
+  }
+
+  // Draw units
+  for (var i = 0; i < units.length; i++) {
+    var unit = units[i];
+    if (unit.x < startX - 1 || unit.x > endX + 1 || unit.y < startY - 1 || unit.y > endY + 1) continue;
+
+    var ux = Math.floor(unit.x * ts - cam.x);
+    var uy = Math.floor(unit.y * ts - cam.y);
+    var us = Math.ceil(ts);
+
+    var isSelected = selectedUnit && selectedUnit.id === unit.id;
+    var isOwn = unit.owner === myPlayerNum;
+    var unitColor = unit.owner === 1 ? COLORS.p1Unit : COLORS.p2Unit;
+
+    // Selection ring
+    if (isSelected) {
+      ctx.strokeStyle = COLORS.selected;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(ux + 1, uy + 1, us - 2, us - 2);
+    }
+
+    // Unit background dot
+    ctx.fillStyle = unitColor + (isOwn && unit.movesLeft <= 0 ? '55' : 'cc');
+    ctx.beginPath();
+    var r = Math.max(3, ts / 3);
+    ctx.arc(ux + us / 2, uy + us / 2, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Unit emoji
+    if (ts >= 12) {
+      var efs = Math.floor(ts * 0.55);
+      ctx.font = efs + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = isOwn && unit.movesLeft <= 0 ? 0.4 : 1;
+      ctx.fillText(unit.symbol || '?', ux + us / 2, uy + us / 2);
+      ctx.globalAlpha = 1;
+    }
+
+    // Fuel indicator for air units
+    if (unit.fuel !== null && ts >= 12 && isOwn) {
+      ctx.fillStyle = unit.fuel <= 3 ? '#f85149' : '#ffd700';
+      ctx.font = '8px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('⛽' + unit.fuel, ux + 1, uy + us - 1);
+    }
+  }
+
+  // Selected unit movement range overlay
+  if (selectedUnit && selectedUnit.owner === myPlayerNum && selectedUnit.movesLeft > 0) {
+    var su = selectedUnit;
+    var range = su.movesLeft;
+    ctx.fillStyle = 'rgba(255,215,0,0.08)';
+    for (var dy = -range; dy <= range; dy++) {
+      for (var dx = -range; dx <= range; dx++) {
+        var tx2 = su.x + dx, ty2 = su.y + dy;
+        if (tx2 < 0 || tx2 >= MAP_W || ty2 < 0 || ty2 >= MAP_H) continue;
+        if (Math.abs(dx) + Math.abs(dy) > range) continue;
+        var tile2 = tiles[ty2] && tiles[ty2][tx2];
+        if (!tile2 || tile2.type === 'fog') continue;
+        if (!canUnitMoveTo(su, tile2)) continue;
+        ctx.fillRect(
+          Math.floor(tx2 * ts - cam.x),
+          Math.floor(ty2 * ts - cam.y),
+          Math.ceil(ts), Math.ceil(ts)
+        );
+      }
+    }
+  }
+}
+
+function canUnitMoveTo(unit, tile) {
+  var domain = getDomain(unit.type);
+  if (domain === 'air') return tile.type !== 'fog';
+  if (domain === 'land') return tile.type === 'land' || tile.type === 'city';
+  if (domain === 'sea') return tile.type === 'ocean';
+  return false;
+}
+
+function getDomain(type) {
+  var domains = { army: 'land', fighter: 'air', bomber: 'air', destroyer: 'sea', submarine: 'sea', transport: 'sea', carrier: 'sea', battleship: 'sea' };
+  return domains[type] || 'land';
+}
+
+function getBuildTime(type) {
+  var times = { army: 5, fighter: 3, destroyer: 6, submarine: 8, transport: 8, carrier: 12, battleship: 14, bomber: 5 };
+  return times[type] || 5;
+}
+
+// ── HUD ──────────────────────────────────────────────────────────────────
+function updateHUD() {
+  if (!gameState) return;
+  var state = gameState;
+  document.getElementById('tb-room').textContent = myRoom || '----';
+  var badge = document.getElementById('tb-player');
+  badge.textContent = 'P' + myPlayerNum;
+  badge.className = 'player-badge p' + myPlayerNum;
+  document.getElementById('tb-turn').textContent = state.turn;
+
+  // Score
+  var p1c = countCitiesForPlayer(state, 1), p2c = countCitiesForPlayer(state, 2);
+  document.getElementById('tb-score').textContent = 'Cities: P1 ' + p1c + ' | P2 ' + p2c;
+
+  // End turn button
+  var btn = document.getElementById('end-turn-btn');
+  if (state.myTurnEnded) {
+    btn.textContent = 'Waiting…';
+    btn.classList.add('done');
+    btn.disabled = true;
+  } else {
+    btn.textContent = 'End Turn';
+    btn.classList.remove('done');
+    btn.disabled = false;
+  }
+
+  // Timer
+  startCountdown(state.turnDeadline);
+
+  // Unit info
+  if (selectedUnit) {
+    var u = state.units.find(function(u2) { return u2.id === selectedUnit.id; });
+    if (u) {
+      selectedUnit = u;
+      var info = (u.symbol || '') + ' ' + capitalize(u.type);
+      info += ' | Moves: ' + u.movesLeft;
+      if (u.fuel !== null) info += ' | Fuel: ' + u.fuel;
+      document.getElementById('unit-details').textContent = info;
+      document.getElementById('prod-select-wrap').style.display = 'none';
+    }
+  } else if (selectedCityPos) {
+    var ct = state.tiles[selectedCityPos.y] && state.tiles[selectedCityPos.y][selectedCityPos.x];
+    if (ct && ct.type === 'city' && ct.city && ct.city.owner === myPlayerNum) {
+      document.getElementById('unit-details').textContent = 'City — producing: ' + (ct.city.production || 'none') + ' (' + ct.city.progress + '/' + getBuildTime(ct.city.production) + ')';
+      document.getElementById('prod-select-wrap').style.display = 'flex';
+      document.getElementById('prod-select').value = ct.city.production || '';
+    } else {
+      clearSelection();
+    }
+  } else {
+    document.getElementById('unit-details').textContent = 'Tap a unit to select';
+    document.getElementById('prod-select-wrap').style.display = 'none';
+  }
+}
+
+function countCitiesForPlayer(state, pid) {
+  var count = 0;
+  for (var y = 0; y < state.tiles.length; y++)
+    for (var x = 0; x < state.tiles[y].length; x++) {
+      var t = state.tiles[y][x];
+      if (t.type === 'city' && t.city && t.city.owner === pid) count++;
+    }
+  return count;
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+var countdownInterval = null;
+function startCountdown(deadline) {
+  if (countdownInterval) clearInterval(countdownInterval);
+  function tick() {
+    var rem = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+    var m = Math.floor(rem / 60), s = rem % 60;
+    document.getElementById('tb-timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  tick();
+  countdownInterval = setInterval(tick, 500);
+}
+
+// ── Input: Pan/Zoom ────────────────────────────────────────────────────────
+var dragStart = null, didDrag = false;
+var lastTouchEnd = 0;
+
+function onPointerDown(e) {
+  dragStart = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y };
+  cam.isDragging = false;
+  didDrag = false;
+}
+
+function onPointerMove(e) {
+  if (!dragStart) return;
+  var dx = e.clientX - dragStart.x;
+  var dy = e.clientY - dragStart.y;
+  if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+    cam.isDragging = true;
+    didDrag = true;
+    cam.x = dragStart.cx - dx;
+    cam.y = dragStart.cy - dy;
+    clampCamera();
+    render();
+  }
+}
+
+function onPointerUp(e) {
+  dragStart = null;
+  cam.isDragging = false;
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  var factor = e.deltaY > 0 ? 0.9 : 1.1;
+  zoomAt(e.offsetX, e.offsetY, factor);
+}
+
+function zoomAt(sx, sy, factor) {
+  var wx = (sx + cam.x) / cam.scale;
+  var wy = (sy + cam.y) / cam.scale;
+  cam.scale = Math.max(6, Math.min(40, cam.scale * factor));
+  cam.x = wx * cam.scale - sx;
+  cam.y = wy * cam.scale - sy;
+  clampCamera();
+  render();
+}
+
+function clampCamera() {
+  var maxX = MAP_W * cam.scale - canvas.width;
+  var maxY = MAP_H * cam.scale - canvas.height;
+  cam.x = Math.max(-canvas.width * 0.3, Math.min(maxX + canvas.width * 0.3, cam.x));
+  cam.y = Math.max(-canvas.height * 0.3, Math.min(maxY + canvas.height * 0.3, cam.y));
+}
+
+// Touch handling
+var touches0 = null;
+function onTouchStart(e) {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    var t = e.touches[0];
+    dragStart = { x: t.clientX, y: t.clientY, cx: cam.x, cy: cam.y };
+    didDrag = false;
+    cam.isDragging = false;
+  } else if (e.touches.length === 2) {
+    var t1 = e.touches[0], t2 = e.touches[1];
+    pinchDist0 = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    pinchScale0 = cam.scale;
+    dragStart = null;
+  }
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (e.touches.length === 1 && dragStart) {
+    var t = e.touches[0];
+    var dx = t.clientX - dragStart.x;
+    var dy = t.clientY - dragStart.y;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      cam.isDragging = true;
+      didDrag = true;
+      cam.x = dragStart.cx - dx;
+      cam.y = dragStart.cy - dy;
+      clampCamera();
+      render();
+    }
+  } else if (e.touches.length === 2 && pinchDist0 !== null) {
+    var t1 = e.touches[0], t2 = e.touches[1];
+    var cx = (t1.clientX + t2.clientX) / 2;
+    var cy = (t1.clientY + t2.clientY) / 2;
+    var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    var factor = dist / pinchDist0;
+    var newScale = Math.max(6, Math.min(40, pinchScale0 * factor));
+    var wx = (cx + cam.x) / cam.scale;
+    var wy = (cy + cam.y) / cam.scale;
+    cam.scale = newScale;
+    cam.x = wx * cam.scale - cx;
+    cam.y = wy * cam.scale - cy;
+    clampCamera();
+    render();
+  }
+}
+
+function onTouchEnd(e) {
+  e.preventDefault();
+  if (!didDrag && e.changedTouches.length === 1 && e.touches.length === 0) {
+    var t = e.changedTouches[0];
+    var now = Date.now();
+    if (now - lastTouchEnd < 300) {
+      // double-tap zoom
+      zoomAt(t.clientX, t.clientY, 1.5);
+    } else {
+      onCanvasTap(t.clientX, t.clientY);
+    }
+    lastTouchEnd = now;
+  }
+  if (e.touches.length === 0) {
+    dragStart = null;
+    cam.isDragging = false;
+    pinchDist0 = null;
+  }
+}
+
+// ── Click/Tap logic ────────────────────────────────────────────────────────
+function onCanvasClick(e) {
+  if (didDrag) return;
+  onCanvasTap(e.offsetX, e.offsetY);
+}
+
+function onCanvasTap(sx, sy) {
+  if (!gameState || gameState.phase !== 'playing') return;
+
+  var wpos = screenToWorld(sx, sy);
+  var tx = Math.floor(wpos.x);
+  var ty = Math.floor(wpos.y);
+  if (tx < 0 || tx >= MAP_W || ty < 0 || ty >= MAP_H) return;
+
+  var tile = gameState.tiles[ty] && gameState.tiles[ty][tx];
+  if (!tile || tile.type === 'fog') return;
+
+  // Find unit at this tile
+  var unitAtTile = null;
+  for (var i = gameState.units.length - 1; i >= 0; i--) {
+    var u = gameState.units[i];
+    if (u.x === tx && u.y === ty) { unitAtTile = u; break; }
+  }
+
+  if (selectedUnit) {
+    // Check if tapping on selected unit — deselect
+    if (unitAtTile && unitAtTile.id === selectedUnit.id) {
+      clearSelection();
+      render();
+      updateHUD();
+      return;
+    }
+
+    // If tapping own unit, switch selection
+    if (unitAtTile && unitAtTile.owner === myPlayerNum) {
+      selectedUnit = unitAtTile;
+      selectedCityPos = null;
+      render();
+      updateHUD();
+      return;
+    }
+
+    // Otherwise move selected unit to tapped tile
+    var su = selectedUnit;
+    if (su.owner !== myPlayerNum) { clearSelection(); render(); updateHUD(); return; }
+    if (su.movesLeft <= 0) { showToast('Unit has no moves left'); return; }
+
+    var dist = Math.max(Math.abs(tx - su.x), Math.abs(ty - su.y));
+    if (dist > su.movesLeft) { showToast('Too far! Moves left: ' + su.movesLeft); return; }
+
+    if (!canUnitMoveTo(su, tile)) { showToast('Unit can\'t move there'); return; }
+
+    socket.emit('moveUnit', { roomCode: myRoom, unitId: su.id, toX: tx, toY: ty });
+    // Optimistic clear
+    clearSelection();
+    return;
+  }
+
+  // Nothing selected — select a unit or city
+  if (unitAtTile && unitAtTile.owner === myPlayerNum) {
+    selectedUnit = unitAtTile;
+    selectedCityPos = null;
+    render();
+    updateHUD();
+    return;
+  }
+
+  if (tile.type === 'city' && tile.city && tile.city.owner === myPlayerNum) {
+    selectedCityPos = { x: tx, y: ty };
+    selectedUnit = null;
+    render();
+    updateHUD();
+    return;
+  }
+
+  clearSelection();
+  render();
+  updateHUD();
+}
+
+function clearSelection() {
+  selectedUnit = null;
+  selectedCityPos = null;
+}
+
+// ── Game actions ───────────────────────────────────────────────────────────
+function setProduction() {
+  if (!selectedCityPos) return;
+  var unitType = document.getElementById('prod-select').value;
+  if (!unitType) return;
+  socket.emit('setProduction', {
+    roomCode: myRoom,
+    cityX: selectedCityPos.x,
+    cityY: selectedCityPos.y,
+    unitType: unitType,
+  });
+}
+
+function endTurn() {
+  socket.emit('endTurn', { roomCode: myRoom });
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+var toastTimeout = null;
+function showToast(msg) {
+  var el = document.getElementById('msg-toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(function() { el.style.display = 'none'; }, 2500);
+}
+
+// Allow pressing Enter in join code field
+document.getElementById('join-code').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') joinGame();
+});
+document.getElementById('player-name').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') createGame();
+});
+
+// Auto-uppercase join code
+document.getElementById('join-code').addEventListener('input', function(e) {
+  this.value = this.value.toUpperCase();
+});
+</script>
+</body>
+</html>
