@@ -1,0 +1,180 @@
+======================================================================
+STRATEGIC DOMINATION — Level 3 AI Self-Play Simulation
+======================================================================
+Map size: 40x40 | Max turns: 30
+
+Starting positions: P1=(18,2) P2=(23,22)
+Same landmass: true | Starting distance: 20 hexes
+
+Total cities on map: 27
+P1 start cities: 1 | P2 start cities: 1
+P1 start units: 1 | P2 start units: 1
+
+--- Turn 1 ---
+  Cities: P1=1  P2=1
+  Units:  P1=1   P2=1
+--- Turn 2 ---
+  Cities: P1=1  P2=1
+  Units:  P1=1   P2=1
+--- Turn 3 ---
+  Cities: P1=1  P2=1
+  Units:  P1=1   P2=1
+--- Turn 4 ---
+  Cities: P1=1  P2=1
+  Units:  P1=1   P2=1
+--- Turn 5 ---
+  Cities: P1=1  P2=1
+  Units:  P1=1   P2=1
+--- Turn 6 ---
+  Cities: P1=2  P2=1
+  Units:  P1=0   P2=1
+  P1 captured 1 city/cities
+--- Turn 7 ---
+  Cities: P1=2  P2=1
+  Units:  P1=0   P2=1
+--- Turn 8 ---
+  Cities: P1=2  P2=1
+  Units:  P1=1   P2=2
+  P1 produced 1 unit(s)
+  P2 produced 1 unit(s)
+--- Turn 9 ---
+  Cities: P1=2  P2=1
+  Units:  P1=1   P2=2
+--- Turn 10 ---
+  Cities: P1=2  P2=1
+  Units:  P1=1   P2=2
+--- Turn 11 ---
+  Cities: P1=2  P2=1
+  Units:  P1=2   P2=2
+  P1 produced 1 unit(s)
+--- Turn 12 ---
+  Cities: P1=2  P2=1
+  Units:  P1=2   P2=2
+--- Turn 13 ---
+  Cities: P1=2  P2=1
+  Units:  P1=2   P2=2
+--- Turn 14 ---
+  Cities: P1=2  P2=2
+  Units:  P1=2   P2=1
+  P2 captured 1 city/cities
+--- Turn 15 ---
+  Cities: P1=2  P2=2
+  Units:  P1=2   P2=1
+--- Turn 16 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+  P1 produced 2 unit(s)
+  P2 produced 1 unit(s)
+--- Turn 17 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+--- Turn 18 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+--- Turn 19 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+--- Turn 20 ---
+  Cities: P1=2  P2=2
+  Units:  P1=3   P2=2
+  P1 lost 1 air unit(s) to fuel crash
+--- Turn 21 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+  P1 produced 1 unit(s)
+--- Turn 22 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+--- Turn 23 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+--- Turn 24 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+--- Turn 25 ---
+  Cities: P1=2  P2=2
+  Units:  P1=3   P2=2
+  P1 lost 1 air unit(s) to fuel crash
+--- Turn 26 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+  P1 produced 1 unit(s)
+--- Turn 27 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=2
+--- Turn 28 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=3
+  P2 produced 1 unit(s)
+--- Turn 29 ---
+  Cities: P1=2  P2=2
+  Units:  P1=4   P2=3
+--- Turn 30 ---
+  Cities: P1=2  P2=2
+  Units:  P1=3   P2=3
+  P1 lost 1 air unit(s) to fuel crash
+
+======================================================================
+FINAL RESULTS
+======================================================================
+
+⚖️  STALEMATE after 30 turns
+
+Final State:
+  P1: 2 cities, 3 units
+  P2: 2 cities, 3 units
+
+Turn-by-turn city counts:
+Turn | P1 Cities | P2 Cities | P1 Units | P2 Units | Combats
+-----|-----------|-----------|----------|----------|--------
+   1 |         1 |         1 |       1 |       1 |       0
+   2 |         1 |         1 |       1 |       1 |       0
+   3 |         1 |         1 |       1 |       1 |       0
+   4 |         1 |         1 |       1 |       1 |       0
+   5 |         1 |         1 |       1 |       1 |       0
+   6 |         2 |         1 |       0 |       1 |       0
+   7 |         2 |         1 |       0 |       1 |       0
+   8 |         2 |         1 |       1 |       2 |       0
+   9 |         2 |         1 |       1 |       2 |       0
+  10 |         2 |         1 |       1 |       2 |       0
+  11 |         2 |         1 |       2 |       2 |       0
+  12 |         2 |         1 |       2 |       2 |       0
+  13 |         2 |         1 |       2 |       2 |       0
+  14 |         2 |         2 |       2 |       1 |       0
+  15 |         2 |         2 |       2 |       1 |       0
+  16 |         2 |         2 |       4 |       2 |       0
+  17 |         2 |         2 |       4 |       2 |       0
+  18 |         2 |         2 |       4 |       2 |       0
+  19 |         2 |         2 |       4 |       2 |       0
+  20 |         2 |         2 |       3 |       2 |       0
+  21 |         2 |         2 |       4 |       2 |       0
+  22 |         2 |         2 |       4 |       2 |       0
+  23 |         2 |         2 |       4 |       2 |       0
+  24 |         2 |         2 |       4 |       2 |       0
+  25 |         2 |         2 |       3 |       2 |       0
+  26 |         2 |         2 |       4 |       2 |       0
+  27 |         2 |         2 |       4 |       2 |       0
+  28 |         2 |         2 |       4 |       3 |       0
+  29 |         2 |         2 |       4 |       3 |       0
+  30 |         2 |         2 |       3 |       3 |       0
+
+Total combats: 0
+  Attacker wins: 0 | Mutual kills: 0 | Misses: 0
+  P1 total kills: 0 | P2 total kills: 0
+
+City captures: 2 (P1: 1, P2: 1)
+Air unit crashes: 3
+Retreats triggered: 0
+
+Total units produced: 9 (P1: 6, P2: 3)
+Units produced by type: {
+  "transport": 4,
+  "bomber": 4,
+  "battleship": 1
+}
+
+✅ No anomalies detected.
+
+======================================================================
+
+Detailed JSON data written to selfplay_data.json

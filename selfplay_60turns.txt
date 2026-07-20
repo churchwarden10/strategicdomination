@@ -1,0 +1,335 @@
+======================================================================
+STRATEGIC DOMINATION — Level 3 AI Self-Play Simulation
+======================================================================
+Map size: 40x40 | Max turns: 60
+
+Starting positions: P1=(18,14) P2=(24,20)
+Same landmass: true | Starting distance: 9 hexes
+
+Total cities on map: 29
+P1 start cities: 1 | P2 start cities: 1
+P1 start units: 1 | P2 start units: 1
+
+--- Turn 1 ---
+  Cities: P1=1  P2=1
+  Units:  P1=1   P2=1
+--- Turn 2 ---
+  Cities: P1=1  P2=1
+  Units:  P1=2   P2=1
+  P1 produced 1 unit(s)
+--- Turn 3 ---
+  Cities: P1=1  P2=1
+  Units:  P1=2   P2=1
+--- Turn 4 ---
+  Cities: P1=1  P2=1
+  Units:  P1=3   P2=1
+  P1 produced 1 unit(s)
+--- Turn 5 ---
+  Cities: P1=1  P2=1
+  Units:  P1=3   P2=1
+--- Turn 6 ---
+  Cities: P1=1  P2=1
+  Units:  P1=4   P2=1
+  P1 produced 1 unit(s)
+--- Turn 7 ---
+  Cities: P1=1  P2=1
+  Units:  P1=4   P2=1
+--- Turn 8 ---
+  Cities: P1=1  P2=1
+  Units:  P1=5   P2=2
+  P1 produced 1 unit(s)
+  P2 produced 1 unit(s)
+--- Turn 9 ---
+  Cities: P1=1  P2=1
+  Units:  P1=5   P2=2
+--- Turn 10 ---
+  Cities: P1=2  P2=1
+  Units:  P1=5   P2=2
+  P1 captured 1 city/cities
+  P1 produced 1 unit(s)
+--- Turn 11 ---
+  Cities: P1=2  P2=1
+  Units:  P1=5   P2=2
+--- Turn 12 ---
+  Cities: P1=2  P2=2
+  Units:  P1=6   P2=1
+  P2 captured 1 city/cities
+  P1 produced 1 unit(s)
+--- Turn 13 ---
+  Cities: P1=3  P2=2
+  Units:  P1=5   P2=1
+  P1 captured 1 city/cities
+--- Turn 14 ---
+  Cities: P1=3  P2=2
+  Units:  P1=6   P2=1
+  P1 produced 1 unit(s)
+--- Turn 15 ---
+  Cities: P1=4  P2=2
+  Units:  P1=6   P2=1
+  P1 captured 1 city/cities
+  P1 produced 1 unit(s)
+--- Turn 16 ---
+  Cities: P1=4  P2=2
+  Units:  P1=7   P2=2
+  P1 produced 1 unit(s)
+  P2 produced 1 unit(s)
+--- Turn 17 ---
+  Cities: P1=5  P2=2
+  Units:  P1=7   P2=2
+  P1 captured 1 city/cities
+  P1 produced 1 unit(s)
+--- Turn 18 ---
+  Cities: P1=5  P2=2
+  Units:  P1=9   P2=2
+  P1 produced 2 unit(s)
+--- Turn 19 ---
+  Cities: P1=7  P2=2
+  Units:  P1=9   P2=2
+  P1 captured 2 city/cities
+  P1 produced 2 unit(s)
+--- Turn 20 ---
+  Cities: P1=7  P2=2
+  Units:  P1=10   P2=2
+  P1 produced 1 unit(s)
+--- Turn 21 ---
+  Cities: P1=7  P2=2
+  Units:  P1=12   P2=2
+  P1 produced 2 unit(s)
+--- Turn 22 ---
+  Cities: P1=8  P2=2
+  Units:  P1=12   P2=2
+  P1 captured 1 city/cities
+  P1 produced 1 unit(s)
+--- Turn 23 ---
+  Cities: P1=9  P2=2
+  Units:  P1=14   P2=2
+  P1 captured 1 city/cities
+  P1 produced 3 unit(s)
+--- Turn 24 ---
+  Cities: P1=9  P2=2
+  Units:  P1=15   P2=2
+  P1 produced 1 unit(s)
+--- Turn 25 ---
+  Cities: P1=9  P2=2
+  Units:  P1=18   P2=2
+  P1 produced 3 unit(s)
+--- Turn 26 ---
+  Cities: P1=10  P2=2
+  Units:  P1=19   P2=3
+  P1 captured 1 city/cities
+  P1 produced 2 unit(s)
+  P2 produced 1 unit(s)
+--- Turn 27 ---
+  Cities: P1=11  P2=2
+  Units:  P1=20   P2=3
+  P1 captured 1 city/cities
+  P1 produced 2 unit(s)
+--- Turn 28 ---
+  Cities: P1=11  P2=2
+  Units:  P1=21   P2=3
+  P1 produced 1 unit(s)
+--- Turn 29 ---
+  Cities: P1=11  P2=2
+  Units:  P1=24   P2=3
+  P1 produced 3 unit(s)
+--- Turn 30 ---
+  Cities: P1=11  P2=2
+  Units:  P1=25   P2=3
+  P1 produced 1 unit(s)
+--- Turn 31 ---
+  Cities: P1=11  P2=2
+  Units:  P1=29   P2=3
+  Combats: 1 | P1 deaths: 0 | P2 deaths: 0
+    🛡️  MISS — P1 army (roll 4/1) vs P2 transport (roll -/1) @ (24,20)
+  P1 produced 4 unit(s)
+--- Turn 32 ---
+  Cities: P1=11  P2=2
+  Units:  P1=30   P2=3
+  Combats: 1 | P1 deaths: 0 | P2 deaths: 0
+    🛡️  MISS — P1 army (roll 4/1) vs P2 transport (roll -/1) @ (24,20)
+  P1 produced 1 unit(s)
+--- Turn 33 ---
+  Cities: P1=11  P2=2
+  Units:  P1=32   P2=3
+  Combats: 3 | P1 deaths: 0 | P2 deaths: 0
+    🛡️  MISS — P1 army (roll 6/1) vs P2 transport (roll -/1) @ (24,20)
+    🛡️  MISS — P1 army (roll 5/1) vs P2 transport (roll -/1) @ (24,20)
+    🛡️  MISS — P1 destroyer (roll 4/2) vs P2 transport (roll -/1) @ (24,20)
+  P1 produced 2 unit(s)
+--- Turn 34 ---
+  Cities: P1=12  P2=1
+  Units:  P1=33   P2=1
+  Combats: 4 | P1 deaths: 0 | P2 deaths: 2
+    🛡️  MISS — P1 army (roll 3/1) vs P2 transport (roll -/1) @ (24,20)
+    ⚔️  ATK WINS — P1 army (roll 1/1) vs P2 transport (roll 2/1) @ (24,20)
+    🛡️  MISS — P1 army (roll 2/1) vs P2 transport (roll -/1) @ (24,20)
+    ⚔️  ATK WINS — P1 army (roll 1/1) vs P2 transport (roll 3/1) @ (24,20)
+  P1 captured 1 city/cities
+  P1 produced 2 unit(s)
+--- Turn 35 ---
+  Cities: P1=12  P2=1
+  Units:  P1=33   P2=1
+  Combats: 2 | P1 deaths: 2 | P2 deaths: 0
+    ⚔️  ATK WINS — P2 battleship (roll 4/4) vs P1 transport (roll 6/1) @ (20,6)
+    ⚔️  ATK WINS — P2 battleship (roll 4/4) vs P1 transport (roll 4/1) @ (20,6)
+  P1 produced 2 unit(s)
+--- Turn 36 ---
+  Cities: P1=12  P2=1
+  Units:  P1=37   P2=1
+  P1 produced 4 unit(s)
+--- Turn 37 ---
+  Cities: P1=12  P2=1
+  Units:  P1=39   P2=1
+  P1 produced 2 unit(s)
+--- Turn 38 ---
+  Cities: P1=12  P2=1
+  Units:  P1=41   P2=1
+  P1 produced 2 unit(s)
+--- Turn 39 ---
+  Cities: P1=12  P2=1
+  Units:  P1=42   P2=1
+  P1 produced 1 unit(s)
+--- Turn 40 ---
+  Cities: P1=12  P2=1
+  Units:  P1=45   P2=2
+  P1 produced 3 unit(s)
+  P2 produced 1 unit(s)
+--- Turn 41 ---
+  Cities: P1=12  P2=1
+  Units:  P1=48   P2=2
+  P1 produced 3 unit(s)
+--- Turn 42 ---
+  Cities: P1=12  P2=1
+  Units:  P1=48   P2=1
+  Combats: 2 | P1 deaths: 2 | P2 deaths: 1
+    ⚔️  ATK WINS — P2 battleship (roll 1/4) vs P1 transport (roll 5/1) @ (24,11)
+    💥 MUTUAL KILL — P2 battleship (roll 3/4) vs P1 transport (roll 1/1) @ (24,11)
+  P1 produced 2 unit(s)
+--- Turn 43 ---
+  Cities: P1=13  P2=0
+  Units:  P1=50   P2=1
+  P1 captured 1 city/cities
+  P1 produced 3 unit(s)
+--- Turn 44 ---
+  Cities: P1=13  P2=0
+  Units:  P1=53   P2=1
+  P1 produced 3 unit(s)
+--- Turn 45 ---
+  Cities: P1=13  P2=0
+  Units:  P1=53   P2=1
+--- Turn 46 ---
+  Cities: P1=13  P2=0
+  Units:  P1=53   P2=1
+--- Turn 47 ---
+  Cities: P1=13  P2=0
+  Units:  P1=55   P2=1
+  P1 produced 2 unit(s)
+--- Turn 48 ---
+  Cities: P1=13  P2=0
+  Units:  P1=55   P2=1
+  Combats: 1 | P1 deaths: 1 | P2 deaths: 0
+    ⚔️  ATK WINS — P2 battleship (roll 2/4) vs P1 destroyer (roll 5/2) @ (22,3)
+  P1 produced 1 unit(s)
+--- Turn 49 ---
+  Cities: P1=13  P2=0
+  Units:  P1=57   P2=1
+  P1 produced 2 unit(s)
+--- Turn 50 ---
+  Cities: P1=13  P2=0
+  Units:  P1=58   P2=1
+  P1 produced 1 unit(s)
+--- Turn 51 ---
+  Cities: P1=13  P2=0
+  Units:  P1=58   P2=1
+--- Turn 52 ---
+  Cities: P1=13  P2=0
+  Units:  P1=58   P2=1
+--- Turn 53 ---
+
+======================================================================
+FINAL RESULTS
+======================================================================
+
+🏆 WINNER: Player 1!
+
+Final State:
+  P1: 13 cities, 58 units
+  P2: 0 cities, 0 units
+
+Turn-by-turn city counts:
+Turn | P1 Cities | P2 Cities | P1 Units | P2 Units | Combats
+-----|-----------|-----------|----------|----------|--------
+   1 |         1 |         1 |       1 |       1 |       0
+   2 |         1 |         1 |       2 |       1 |       0
+   3 |         1 |         1 |       2 |       1 |       0
+   4 |         1 |         1 |       3 |       1 |       0
+   5 |         1 |         1 |       3 |       1 |       0
+   6 |         1 |         1 |       4 |       1 |       0
+   7 |         1 |         1 |       4 |       1 |       0
+   8 |         1 |         1 |       5 |       2 |       0
+   9 |         1 |         1 |       5 |       2 |       0
+  10 |         2 |         1 |       5 |       2 |       0
+  11 |         2 |         1 |       5 |       2 |       0
+  12 |         2 |         2 |       6 |       1 |       0
+  13 |         3 |         2 |       5 |       1 |       0
+  14 |         3 |         2 |       6 |       1 |       0
+  15 |         4 |         2 |       6 |       1 |       0
+  16 |         4 |         2 |       7 |       2 |       0
+  17 |         5 |         2 |       7 |       2 |       0
+  18 |         5 |         2 |       9 |       2 |       0
+  19 |         7 |         2 |       9 |       2 |       0
+  20 |         7 |         2 |      10 |       2 |       0
+  21 |         7 |         2 |      12 |       2 |       0
+  22 |         8 |         2 |      12 |       2 |       0
+  23 |         9 |         2 |      14 |       2 |       0
+  24 |         9 |         2 |      15 |       2 |       0
+  25 |         9 |         2 |      18 |       2 |       0
+  26 |        10 |         2 |      19 |       3 |       0
+  27 |        11 |         2 |      20 |       3 |       0
+  28 |        11 |         2 |      21 |       3 |       0
+  29 |        11 |         2 |      24 |       3 |       0
+  30 |        11 |         2 |      25 |       3 |       0
+  31 |        11 |         2 |      29 |       3 |       1
+  32 |        11 |         2 |      30 |       3 |       1
+  33 |        11 |         2 |      32 |       3 |       3
+  34 |        12 |         1 |      33 |       1 |       4
+  35 |        12 |         1 |      33 |       1 |       2
+  36 |        12 |         1 |      37 |       1 |       0
+  37 |        12 |         1 |      39 |       1 |       0
+  38 |        12 |         1 |      41 |       1 |       0
+  39 |        12 |         1 |      42 |       1 |       0
+  40 |        12 |         1 |      45 |       2 |       0
+  41 |        12 |         1 |      48 |       2 |       0
+  42 |        12 |         1 |      48 |       1 |       2
+  43 |        13 |         0 |      50 |       1 |       0
+  44 |        13 |         0 |      53 |       1 |       0
+  45 |        13 |         0 |      53 |       1 |       0
+  46 |        13 |         0 |      53 |       1 |       0
+  47 |        13 |         0 |      55 |       1 |       0
+  48 |        13 |         0 |      55 |       1 |       1
+  49 |        13 |         0 |      57 |       1 |       0
+  50 |        13 |         0 |      58 |       1 |       0
+  51 |        13 |         0 |      58 |       1 |       0
+  52 |        13 |         0 |      58 |       1 |       0
+
+Total combats: 15
+  Attacker wins: 6 | Mutual kills: 2 | Misses: 7
+  P1 total kills: 4 | P2 total kills: 6
+
+City captures: 13 (P1: 12, P2: 1)
+Air unit crashes: 0
+Retreats triggered: 0
+
+Total units produced: 79 (P1: 75, P2: 4)
+Units produced by type: {
+  "army": 50,
+  "transport": 9,
+  "destroyer": 11,
+  "battleship": 9
+}
+
+✅ No anomalies detected.
+
+======================================================================
+
+Detailed JSON data written to selfplay_data.json

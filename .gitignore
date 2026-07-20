@@ -1,2 +1,9 @@
 node_modules/
-DONE.txt
+.env
+*.log
+logs/
+cloudflared
+ngrok
+*.tgz
+.DS_Store
+selfplay_data.json

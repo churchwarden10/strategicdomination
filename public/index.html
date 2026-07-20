@@ -36,11 +36,9 @@
     flex-direction: column;
   }
 
-  /* ── Screens ── */
   .screen { display: none; flex-direction: column; height: 100%; }
   .screen.active { display: flex; }
 
-  /* ── Lobby ── */
   #lobby {
     align-items: center;
     justify-content: center;
@@ -49,9 +47,7 @@
     overflow-y: auto;
   }
 
-  .logo {
-    text-align: center;
-  }
+  .logo { text-align: center; }
   .logo h1 {
     font-size: clamp(1.6rem, 5vw, 2.8rem);
     font-weight: 800;
@@ -61,11 +57,7 @@
     background-clip: text;
     letter-spacing: -1px;
   }
-  .logo p {
-    color: var(--muted);
-    font-size: 0.85rem;
-    margin-top: 4px;
-  }
+  .logo p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
 
   .card {
     background: var(--panel);
@@ -90,9 +82,7 @@
     outline: none;
     -webkit-appearance: none;
   }
-  .form-group input:focus, .form-group select:focus {
-    border-color: var(--blue);
-  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--blue); }
 
   .btn {
     display: block;
@@ -110,6 +100,43 @@
   .btn-primary { background: var(--blue); color: #fff; }
   .btn-red { background: var(--red); color: #fff; }
   .btn-ghost { background: var(--border); color: var(--text); }
+  .btn-sm {
+    display: inline-block;
+    width: auto;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    border-radius: 6px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    background: var(--blue);
+    color: #fff;
+    margin-top: 4px;
+  }
+  .btn-sm:active { opacity: 0.75; }
+  .btn-sm.green { background: var(--green); }
+  .btn-sm.gold { background: #7a5c10; color: #ffd700; border: 1px solid #ffd700; }
+
+  .btn-size-toggle {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn-size-toggle.active {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+  .btn-size-toggle:active { opacity: 0.75; }
 
   .room-code-display {
     background: var(--bg);
@@ -144,15 +171,9 @@
     max-width: 400px;
     width: 100%;
   }
-  .divider::before, .divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
   .divider span { color: var(--muted); font-size: 0.8rem; }
 
-  /* ── Game Screen ── */
   #game {
     flex-direction: column;
     height: 100dvh;
@@ -172,12 +193,7 @@
   #topbar .room { font-family: monospace; color: var(--gold); font-weight: 700; }
   #topbar .turn-info { color: var(--muted); }
   #topbar .timer { font-weight: 700; color: var(--blue-light); margin-left: auto; }
-  .player-badge {
-    padding: 3px 8px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
+  .player-badge { padding: 3px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
   .p1 { background: var(--blue); color: #fff; }
   .p2 { background: var(--red); color: #fff; }
 
@@ -204,8 +220,8 @@
     gap: 10px;
     align-items: stretch;
     flex-wrap: wrap;
-    min-height: 90px;
-    max-height: 140px;
+    min-height: 44px;
+    max-height: 120px;
     overflow-y: auto;
   }
 
@@ -235,26 +251,36 @@
     -webkit-appearance: none;
   }
 
+  #transport-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 2;
+    min-width: 160px;
+  }
+  #transport-actions .label { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; }
+  #transport-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
   #end-turn-btn {
-    padding: 8px 14px;
-    font-size: 0.82rem;
-    border-radius: 8px;
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    z-index: 200;
+    padding: 14px 22px;
+    font-size: 1rem;
+    border-radius: 12px;
     border: none;
     background: var(--green);
     color: #fff;
     font-weight: 700;
     cursor: pointer;
-    align-self: center;
     white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
   }
-  #end-turn-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
+  #end-turn-btn:disabled { opacity: 0.4; cursor: default; }
   #end-turn-btn.done { background: var(--muted); }
 
-  /* ── End screen ── */
   #endscreen {
     align-items: center;
     justify-content: center;
@@ -264,7 +290,6 @@
   #endscreen h1 { font-size: 2rem; }
   #win-msg { color: var(--muted); }
 
-  /* ── Waiting ── */
   #waiting-msg {
     text-align: center;
     color: var(--muted);
@@ -288,7 +313,99 @@
     pointer-events: none;
   }
 
-  /* Legend */
+  /* Board transport prompt */
+  #board-prompt {
+    position: fixed;
+    bottom: 170px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 10px 16px;
+    z-index: 150;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    min-width: 200px;
+  }
+  #board-prompt .bp-title { font-size: 0.85rem; color: var(--text); font-weight: 700; }
+  #board-prompt .bp-btns { display: flex; gap: 8px; }
+
+  /* Unit stacking popup */
+  #unit-picker {
+    position: fixed;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px;
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  #unit-picker .picker-title {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+  }
+  .picker-unit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.1s;
+  }
+  .picker-unit:hover, .picker-unit:active { background: var(--border); }
+  .picker-unit .pu-sym { font-size: 1.1rem; }
+  .picker-unit .pu-info { display: flex; flex-direction: column; }
+  .picker-unit .pu-name { color: var(--text); font-weight: 600; font-size: 0.8rem; }
+  .picker-unit .pu-moves { color: var(--muted); font-size: 0.7rem; }
+
+  /* Unload picker */
+  #unload-picker {
+    position: fixed;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px;
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 160px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  #unload-picker .picker-title {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+  }
+  .unload-unit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.1s;
+  }
+  .unload-unit:hover, .unload-unit:active { background: var(--border); }
+
   #legend {
     display: flex;
     gap: 8px;
@@ -299,6 +416,23 @@
     padding: 0 10px 4px;
     background: var(--panel);
   }
+
+  /* Battle Log */
+  /* battle-log-wrap is now inline-styled as a fixed overlay */
+  .battle-entry {
+    font-size: 0.74rem;
+    line-height: 1.4;
+    padding: 3px 6px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .battle-entry.p1-atk { border-left-color: var(--blue-light); }
+  .battle-entry.p2-atk { border-left-color: var(--red-light); }
+  .battle-entry.both-survive { border-left-color: var(--muted); color: var(--muted); }
   .legend-item { display: flex; align-items: center; gap: 3px; }
   .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
 </style>
@@ -318,7 +452,15 @@
       <label>Your Name</label>
       <input id="player-name" type="text" placeholder="Commander" maxlength="16">
     </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Map Size</label>
+      <div id="map-size-toggle" style="display:flex;gap:6px;margin-top:4px">
+        <button id="size-large-btn" class="btn-size-toggle active" onclick="setMapSize('large')">Large (40×40)</button>
+        <button id="size-small-btn" class="btn-size-toggle" onclick="setMapSize('small')">Small (20×20)</button>
+      </div>
+    </div>
     <button class="btn btn-primary" onclick="createGame()">Create New Game</button>
+    <button class="btn btn-red" onclick="createSoloGame()" style="margin-top:4px">⚔️ Play vs Computer</button>
   </div>
 
   <div id="create-waiting" style="display:none; width:100%; max-width:400px;">
@@ -326,7 +468,7 @@
       <div class="label">Share this code with Player 2</div>
       <div class="code" id="room-code-display">----</div>
     </div>
-    <div id="waiting-msg">Waiting for opponent to join…</div>
+    <div id="waiting-msg">Waiting for opponent to join...</div>
   </div>
 
   <div class="divider"><span>or</span></div>
@@ -344,18 +486,13 @@
     <h3>How to Play</h3>
     <ul>
       <li><strong>Goal:</strong> Capture all enemy cities to win.</li>
-      <li><strong>Armies</strong> capture cities by moving onto them.</li>
-      <li><strong>Select:</strong> Tap a unit to select it (highlighted).</li>
-      <li><strong>Move:</strong> Tap a destination tile to move the selected unit.</li>
       <li><strong>Production:</strong> Tap a city you own to set what it builds.</li>
-      <li><strong>Turns:</strong> Every 30s auto-advances, or click End Turn early.</li>
-      <li><strong>Combat:</strong> Move onto an enemy unit — attacker wins 60% of the time.</li>
+      <li><strong>Transport:</strong> Select transport → Load nearby land unit. Adjacent land → Unload.</li>
+      <li><strong>Fuel:</strong> Fighters (20) and Bombers (10) crash if they run out!</li>
       <li><strong>Fog of War:</strong> You only see tiles near your units/cities.</li>
-      <li><strong>Fuel:</strong> Fighters (20 moves) and Bombers (10 moves) crash if they run out!</li>
     </ul>
     <div style="margin-top:10px">
-      <strong>Units you can build:</strong>
-      🪖Army (5t) ✈️Fighter (3t) 🚢Destroyer (6t) 🤿Sub (8t) ⛴️Transport (8t) 🛳️Carrier (12t) ⚓Battleship (14t) 💣Bomber (5t)
+      <strong>Units:</strong> 🪖Infantry 🛡️Tank ✈️Fighter 🚁Helicopter 💣Bomber 🚢Destroyer 🤿Sub ⛴️Transport 🛣️Carrier ⚓Battleship
     </div>
   </div>
 </div>
@@ -367,7 +504,7 @@
     <span class="player-badge" id="tb-player">P1</span>
     <span class="turn-info">Turn <span id="tb-turn">1</span></span>
     <span id="tb-score"></span>
-    <span class="timer" id="tb-timer">0:30</span>
+    <span class="timer" id="tb-timer" style="display:none"></span>
   </div>
 
   <div id="legend">
@@ -381,30 +518,47 @@
 
   <div id="map-container">
     <canvas id="map-canvas"></canvas>
+    <!-- Waiting overlay shown while P1 waits for P2 to join -->
+    <div id="waiting-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(13,17,23,0.82); z-index:10; display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+      <div style="font-size:1rem; color:#8b949e;">Waiting for opponent...</div>
+      <div style="font-size:0.85rem; color:#8b949e;">Share this room code:</div>
+      <div id="overlay-code" style="font-family:monospace; font-size:2.8rem; font-weight:900; color:#ffd700; letter-spacing:0.15em;">----</div>
+      <div style="font-size:0.75rem; color:#555;">Game starts automatically when they join</div>
+    </div>
   </div>
 
   <div id="sidebar">
-    <div class="info-block" id="unit-info">
-      <div class="label">Selected Unit</div>
-      <div class="value" id="unit-details">None</div>
-    </div>
     <div id="prod-select-wrap" style="display:none">
       <label>City Production</label>
       <select id="prod-select" onchange="setProduction()">
         <option value="">-- Select --</option>
-        <option value="army">🪖 Army (5t)</option>
-        <option value="fighter">✈️ Fighter (3t)</option>
-        <option value="destroyer">🚢 Destroyer (6t)</option>
-        <option value="submarine">🤿 Submarine (8t)</option>
-        <option value="transport">⛴️ Transport (8t)</option>
-        <option value="carrier">🛳️ Carrier (12t)</option>
-        <option value="battleship">⚓ Battleship (14t)</option>
+        <option value="army">🪶 Infantry (1t)</option>
+        <option value="tank">🛡️ Tank (2t)</option>
+        <option value="fighter">✈️ Fighter (4t)</option>
         <option value="bomber">💣 Bomber (5t)</option>
+        <option value="destroyer">🚢 Destroyer (4t)</option>
+        <option value="submarine">🤿 Submarine (4t)</option>
+        <option value="transport">⛴️ Transport (3t)</option>
+        <option value="carrier">🛣️ Carrier (8t)</option>
+        <option value="battleship">⚓ Battleship (8t)</option>
       </select>
     </div>
-    <button id="end-turn-btn" onclick="endTurn()">End Turn</button>
+    <div id="transport-actions" style="display:none">
+      <div class="label">Transport ⛴️</div>
+      <div id="transport-btns"></div>
+    </div>
   </div>
+
 </div>
+
+<!-- Fixed End Turn button — always bottom-right, above everything -->
+<!-- Battle log overlay — shown/hidden via toggle button -->
+<div id="battle-log-wrap" style="position:fixed;bottom:80px;right:20px;left:20px;z-index:190;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px 10px;max-height:200px;overflow-y:auto;display:none;flex-direction:column;gap:3px;">
+  <div id="battle-log-label" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">⚔️ Battle Log</div>
+  <div id="battle-log-entries"></div>
+</div>
+<button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;bottom:80px;left:20px;z-index:200;padding:10px 18px;font-size:0.82rem;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️ Log</button>
+<button id="end-turn-btn" onclick="endTurn()">End Turn</button>
 
 <!-- End Screen -->
 <div id="endscreen" class="screen">
@@ -416,78 +570,362 @@
 
 <div id="msg-toast"></div>
 
+<!-- Board transport prompt -->
+<div id="board-prompt">
+  <div class="bp-title">⛴️ Board Transport?</div>
+  <div class="bp-btns">
+    <button class="btn-sm green" id="board-yes-btn">Board</button>
+    <button class="btn-sm" style="background:var(--border)" id="board-no-btn">Skip</button>
+  </div>
+</div>
+
+<!-- Unit stacking popup -->
+<div id="unit-picker">
+  <div class="picker-title">Select Unit</div>
+  <div id="picker-list"></div>
+</div>
+
+<!-- Unload picker popup -->
+<div id="unload-picker">
+  <div class="picker-title">Unload To...</div>
+  <div id="unload-list"></div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
 var socket = io();
 var myRoom = null;
+var myName = null;
 var myPlayerNum = null;
 var gameState = null;
 var selectedUnit = null;
 var selectedCityPos = null;
-var turnTimer = null;
+
+// Pending boarding opportunity
+var pendingBoarding = null; // { transportId, unitId }
 
 // Camera / pan+zoom state
-var cam = { x: 0, y: 0, scale: 12, isDragging: false, lastTX: 0, lastTY: 0 };
+var cam = { x: 0, y: 0, scale: 22, isDragging: false };
 var pinchDist0 = null, pinchScale0 = null;
 
-var TILE = 12; // base tile size in px (will be overridden by cam.scale)
 var MAP_W = 40, MAP_H = 40;
+var selectedMapSize = 'large';
+
+// Flash effect for completed cities
+var cityFlashTimers = {}; // cityId -> timestamp when flash started
+
+// Unload hex highlight state
+var unloadHexes = null;      // array of {x,y} land hexes to highlight
+var unloadTransportId = null; // transport being unloaded
+var unloadCargoIndex = null;  // which cargo slot
+
+// ── Hex math (pointy-top, odd-r offset) ───────────────────────────────────
+function hexCorners(cx, cy, size) {
+  var pts = [];
+  for (var i = 0; i < 6; i++) {
+    var angle = Math.PI / 180 * (60 * i - 30);
+    pts.push({ x: cx + size * Math.cos(angle), y: cy + size * Math.sin(angle) });
+  }
+  return pts;
+}
+
+function hexToScreen(col, row) {
+  var size = cam.scale;
+  var w = Math.sqrt(3) * size;
+  var h = 2 * size;
+  var sx = col * w + (row % 2 === 1 ? w / 2 : 0);
+  var sy = row * (h * 0.75);
+  return { x: sx - cam.x, y: sy - cam.y };
+}
+
+function screenToHex(sx, sy) {
+  var size = cam.scale;
+  var w = Math.sqrt(3) * size;
+  var h = 2 * size;
+  var wx = sx + cam.x;
+  var wy = sy + cam.y;
+  var row = Math.round(wy / (h * 0.75));
+  row = Math.max(0, Math.min(MAP_H - 1, row));
+  var offsetX = (row % 2 === 1) ? w / 2 : 0;
+  var col = Math.round((wx - offsetX) / w);
+  col = Math.max(0, Math.min(MAP_W - 1, col));
+
+  var best = { col: col, row: row };
+  var bestDist = Infinity;
+  for (var dr = -1; dr <= 1; dr++) {
+    for (var dc = -1; dc <= 1; dc++) {
+      var tc = col + dc, tr = row + dr;
+      if (tc < 0 || tc >= MAP_W || tr < 0 || tr >= MAP_H) continue;
+      var cen = hexToScreen(tc, tr);
+      var dist = Math.pow(cen.x - sx, 2) + Math.pow(cen.y - sy, 2);
+      if (dist < bestDist) { bestDist = dist; best = { col: tc, row: tr }; }
+    }
+  }
+  return best;
+}
+
+var HEX_NEIGHBORS_EVEN = [[1,0],[0,-1],[-1,-1],[-1,0],[-1,1],[0,1]];
+var HEX_NEIGHBORS_ODD  = [[1,0],[1,-1],[0,-1],[-1,0],[0,1],[1,1]];
+
+function hexNeighbors(col, row) {
+  var dirs = (row % 2 === 0) ? HEX_NEIGHBORS_EVEN : HEX_NEIGHBORS_ODD;
+  var result = [];
+  for (var i = 0; i < dirs.length; i++) {
+    var nc = col + dirs[i][0], nr = row + dirs[i][1];
+    if (nc >= 0 && nc < MAP_W && nr >= 0 && nr < MAP_H)
+      result.push({ x: nc, y: nr });
+  }
+  return result;
+}
+
+function hexDistance(c1, r1, c2, r2) {
+  function toCube(col, row) {
+    var x = col - (row - (row & 1)) / 2;
+    var z = row;
+    return { x: x, y: -x - z, z: z };
+  }
+  var a = toCube(c1, r1), b = toCube(c2, r2);
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
+}
 
 // ── Socket events ──────────────────────────────────────────────────────────
 socket.on('gameCreated', function(data) {
   myRoom = data.roomCode;
   myPlayerNum = data.playerNum;
-  document.getElementById('room-code-display').textContent = data.roomCode;
-  document.getElementById('create-waiting').style.display = 'block';
+  // Go straight into game screen, show waiting overlay with room code
+  showGame();
+  var overlay = document.getElementById('waiting-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('overlay-code').textContent = data.roomCode;
+  document.getElementById('tb-room').textContent = data.roomCode;
 });
 
 socket.on('gameJoined', function(data) {
   myRoom = data.roomCode;
   myPlayerNum = data.playerNum;
+  document.getElementById('tb-room').textContent = data.roomCode;
   showGame();
 });
 
 socket.on('stateUpdate', function(state) {
+  var prevState = gameState;
   gameState = state;
+
+  // Update MAP_W/MAP_H from server state
+  if (state.mapW && state.mapH) {
+    MAP_W = state.mapW;
+    MAP_H = state.mapH;
+  }
+
+  // Detect city production completions for flash effect
+  if (prevState && state.tiles) {
+    for (var y = 0; y < state.tiles.length; y++) {
+      for (var x = 0; x < state.tiles[y].length; x++) {
+        var t = state.tiles[y][x];
+        var pt = prevState.tiles[y] && prevState.tiles[y][x];
+        if (t.type === 'city' && t.city && pt && pt.city) {
+          // If progress reset and owner is us → likely just completed
+          if (pt.city.progress > 0 && t.city.progress === 0 && t.city.owner === myPlayerNum) {
+            cityFlashTimers[t.city.id] = Date.now();
+          }
+        }
+      }
+    }
+  }
+
   if (state.phase === 'playing' || state.phase === 'ended') {
-    showGame();
-    render();
-    updateHUD();
+    // Hide waiting overlay when opponent joins
+    var overlay = document.getElementById('waiting-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    var alreadyInGame = document.getElementById('game').classList.contains('active');
+    if (!alreadyInGame) {
+      showGame();
+    } else {
+      if (selectedUnit) {
+        var su = state.units.find(function(u) { return u.id === selectedUnit.id; });
+        if (su) selectedUnit = su; else selectedUnit = null;
+      }
+      render();
+      updateHUD();
+    }
     if (state.phase === 'ended') showEndScreen(state);
   }
 });
 
-socket.on('error', function(msg) {
-  showToast(msg);
+socket.on('boardingOpportunity', function(data) {
+  // Server tells us a land unit just moved onto a transport tile
+  pendingBoarding = data;
+  showBoardPrompt();
 });
 
-socket.on('moveError', function(msg) {
-  showToast(msg);
-});
+socket.on('error', function(msg) { showToast(msg); });
+socket.on('moveError', function(msg) { showToast(msg); });
+socket.on('opponentDisconnected', function() { showToast('Opponent disconnected'); });
 
-socket.on('opponentDisconnected', function() {
-  showToast('Opponent disconnected');
-});
+// ── Battle Log ─────────────────────────────────────────────────────────────────
+var battleLog = [];
+var UNIT_SYMBOLS = {
+  army: '🪶', tank: '🛡️', fighter: '✈️',
+  bomber: '💣', destroyer: '🚢', submarine: '🤿', transport: '⛴️',
+  carrier: '🛣️', battleship: '⚓'
+}; // keep in sync with prod-select dropdown options above
 
-// ── Lobby actions ──────────────────────────────────────────────────────────
-function createGame() {
-  var name = document.getElementById('player-name').value.trim() || 'Commander';
-  socket.emit('createGame', { name: name });
+function getUnitSymbol(type) {
+  return UNIT_SYMBOLS[type] || '❓';
 }
 
+function buildBattleEntryHTML(r) {
+  var atkSym = getUnitSymbol(r.attackerType);
+  var defSym = getUnitSymbol(r.defenderType);
+  var atkColor = r.attackerOwner === 1 ? '#58a6ff' : '#f85149';
+  var defColor = r.defenderOwner === 1 ? '#58a6ff' : '#f85149';
+  var atkName = 'P' + r.attackerOwner + ' ' + capitalize(r.attackerType);
+  var defName = 'P' + r.defenderOwner + ' ' + capitalize(r.defenderType);
+
+  var html = '';
+  if (r.outcome === 'attacker_wins') {
+    html = '🗡️ <span style="color:' + atkColor + '">' + atkSym + ' ' + atkName + '</span>'
+      + ' 🎲' + r.attackerRoll + '≤' + r.attackerTarget + ' <b>HIT</b> — '
+      + '<span style="color:' + defColor + '">' + defSym + ' ' + defName + '</span>'
+      + ' 🎲' + r.defenderRoll + ' (need ≤' + r.defenderTarget + ') miss. Defender destroyed!';
+  } else if (r.outcome === 'mutual_kill') {
+    html = '💥 <span style="color:' + atkColor + '">' + atkSym + ' ' + atkName + '</span>'
+      + ' 🎲' + r.attackerRoll + '≤' + r.attackerTarget + ' <b>HIT</b> — '
+      + '<span style="color:' + defColor + '">' + defSym + ' ' + defName + '</span>'
+      + ' 🎲' + r.defenderRoll + '≤' + r.defenderTarget + ' <b>HIT</b> — Both destroyed!';
+  } else if (r.outcome === 'defender_wins') {
+    html = '💨 <span style="color:' + atkColor + '">' + atkSym + ' ' + atkName + '</span>'
+      + ' 🎲' + r.attackerRoll + ' (need ≤' + r.attackerTarget + ') miss — '
+      + '<span style="color:' + defColor + '">' + defSym + ' ' + defName + '</span>'
+      + ' 🎲' + r.defenderRoll + '≤' + r.defenderTarget + ' <b>HIT</b> — Attacker destroyed!';
+  } else {
+    // both_missed
+    html = '💨 <span style="color:' + atkColor + '">' + atkSym + ' ' + atkName + '</span>'
+      + ' 🎲' + r.attackerRoll + ' miss — '
+      + '<span style="color:' + defColor + '">' + defSym + ' ' + defName + '</span>'
+      + ' 🎲' + r.defenderRoll + ' miss — No casualties.';
+  }
+  return html;
+}
+
+function toggleBattleLog() {
+  var wrap = document.getElementById('battle-log-wrap');
+  var btn = document.getElementById('battle-log-toggle');
+  if (!wrap) return;
+  var visible = wrap.style.display === 'flex';
+  if (visible) {
+    wrap.style.display = 'none';
+    btn.style.color = 'var(--muted)';
+    btn.style.borderColor = 'var(--border)';
+    btn.textContent = '⚔️ Log';
+  } else {
+    wrap.style.display = 'flex';
+    btn.style.color = 'var(--text)';
+    btn.style.borderColor = 'var(--blue-light)';
+    btn.textContent = '✕ Log';
+  }
+}
+
+function addBattleEntry(r) {
+  battleLog.unshift(r); // newest first
+  if (battleLog.length > 5) battleLog = battleLog.slice(0, 5);
+  // Auto-show log overlay when a battle happens
+  var wrap = document.getElementById('battle-log-wrap');
+  var togBtn = document.getElementById('battle-log-toggle');
+  if (wrap) { wrap.style.display = 'flex'; }
+  if (togBtn) { togBtn.style.color = 'var(--text)'; togBtn.style.borderColor = 'var(--blue-light)'; togBtn.textContent = '✕ Log'; }
+
+  var container = document.getElementById('battle-log-entries');
+  if (!container) return;
+
+  container.innerHTML = '';
+  for (var i = 0; i < battleLog.length; i++) {
+    var entry = battleLog[i];
+    var div = document.createElement('div');
+    var cls = 'battle-entry';
+    if (entry.outcome === 'both_missed') cls += ' both-survive';
+    else if (entry.outcome === 'mutual_kill') cls += ' both-survive';
+    else if (entry.outcome === 'defender_wins') cls += ' p2-atk';
+    else if (entry.attackerOwner === 1) cls += ' p1-atk';
+    else cls += ' p2-atk';
+    div.className = cls;
+    div.innerHTML = buildBattleEntryHTML(entry);
+    container.appendChild(div);
+  }
+
+  // Scroll to top to show latest
+  var wrap = document.getElementById('battle-log-wrap');
+  if (wrap) wrap.scrollTop = 0;
+}
+
+socket.on('battleReport', function(r) {
+  addBattleEntry(r);
+});
+
+// ── Boarding Prompt ────────────────────────────────────────────────────────
+function showBoardPrompt() {
+  var el = document.getElementById('board-prompt');
+  el.style.display = 'flex';
+}
+
+function hideBoardPrompt() {
+  document.getElementById('board-prompt').style.display = 'none';
+  pendingBoarding = null;
+}
+
+document.getElementById('board-yes-btn').onclick = function() {
+  if (pendingBoarding) {
+    socket.emit('loadUnit', {
+      roomCode: myRoom,
+      transportId: pendingBoarding.transportId,
+      unitId: pendingBoarding.unitId
+    });
+  }
+  hideBoardPrompt();
+};
+
+document.getElementById('board-no-btn').onclick = function() {
+  hideBoardPrompt();
+};
+
+// ── Lobby ──────────────────────────────────────────────────────────────────
+function setMapSize(size) {
+  selectedMapSize = size;
+  document.getElementById('size-large-btn').classList.toggle('active', size === 'large');
+  document.getElementById('size-small-btn').classList.toggle('active', size === 'small');
+}
+function createGame() {
+  var name = document.getElementById('player-name').value.trim() || 'Commander';
+  myName = name;
+  socket.emit('createGame', { name: name, mapSize: selectedMapSize });
+}
+function createSoloGame() {
+  var name = document.getElementById('player-name').value.trim() || 'Commander';
+  myName = name;
+  socket.emit('createSoloGame', { name: name, mapSize: selectedMapSize });
+}
 function joinGame() {
   var code = document.getElementById('join-code').value.trim().toUpperCase();
   if (!code || code.length !== 4) { showToast('Enter a 4-letter room code'); return; }
   var name = document.getElementById('player-name').value.trim() || 'Commander';
+  myName = name;
   socket.emit('joinGame', { roomCode: code, name: name });
 }
 
-// ── Screen management ──────────────────────────────────────────────────────
+// ── Screens ────────────────────────────────────────────────────────────────
 function showGame() {
   document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
   document.getElementById('game').classList.add('active');
-  initCanvas();
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      initCanvas();
+      centerCamera();
+      render();
+      updateHUD();
+    });
+  });
 }
 
 function showEndScreen(state) {
@@ -497,51 +935,118 @@ function showEndScreen(state) {
     var isWinner = state.winner === myPlayerNum;
     document.getElementById('end-icon').textContent = isWinner ? '🏆' : '💀';
     document.getElementById('end-title').textContent = isWinner ? 'Victory!' : 'Defeat';
-    document.getElementById('win-msg').textContent = isWinner
-      ? 'You conquered all enemy cities!' : 'Your empire has fallen.';
+    document.getElementById('win-msg').textContent = isWinner ? 'You conquered all enemy cities!' : 'Your empire has fallen.';
   }, 500);
 }
 
 // ── Canvas setup ──────────────────────────────────────────────────────────
 var canvas, ctx;
+var canvasInitialized = false;
 
 function initCanvas() {
+  if (canvasInitialized) return;
+  canvasInitialized = true;
   canvas = document.getElementById('map-canvas');
   ctx = canvas.getContext('2d');
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
-  // Mouse events
   canvas.addEventListener('mousedown', onPointerDown);
   canvas.addEventListener('mousemove', onPointerMove);
   canvas.addEventListener('mouseup', onPointerUp);
   canvas.addEventListener('wheel', onWheel, { passive: false });
   canvas.addEventListener('click', onCanvasClick);
 
-  // Touch events
   canvas.addEventListener('touchstart', onTouchStart, { passive: false });
   canvas.addEventListener('touchmove', onTouchMove, { passive: false });
   canvas.addEventListener('touchend', onTouchEnd, { passive: false });
 
-  // Center camera on player start
-  centerCamera();
+  // Prevent browser pinch-zoom and double-tap zoom on the WHOLE document
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('dblclick', function(e) {
+    if (e.target !== canvas) e.preventDefault();
+  }, { passive: false });
+
+  // ── Resume / reconnect handler ──────────────────────────────────────────
+  // iOS Safari suspends the page and kills WebSockets when you switch apps or
+  // lock the screen. On resume we: (1) reset all touch state, (2) force a clean
+  // socket reconnect, (3) re-request game state.
+  function resetTouchState() {
+    dragStart = null;
+    didDrag = false;
+    cam.isDragging = false;
+    pinchDist0 = null;
+    pinchScale0 = null;
+    clearUnloadMode();
+  }
+
+  function doReconnect() {
+    if (!myRoom) return;
+    var roomSnap = myRoom;
+    var nameSnap = myName;
+    // Tear down cleanly then reconnect
+    try { socket.disconnect(); } catch(e) {}
+    setTimeout(function() {
+      try { socket.connect(); } catch(e) {}
+      // Wait for connection, with a fallback retry
+      var attempts = 0;
+      function tryRejoin() {
+        if (socket.connected) {
+          socket.emit('rejoinGame', { roomCode: roomSnap, name: nameSnap });
+        } else if (attempts < 8) {
+          attempts++;
+          setTimeout(tryRejoin, 500);
+        }
+      }
+      setTimeout(tryRejoin, 400);
+    }, 200);
+  }
+
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      resetTouchState();
+      render();
+      doReconnect();
+    }
+  });
+  window.addEventListener('focus', function() {
+    resetTouchState();
+    doReconnect();
+  });
+  window.addEventListener('pageshow', function() {
+    resetTouchState();
+    render();
+    doReconnect();
+  });
+  // Periodic ping: if socket goes silent for >30s while page is visible, reconnect
+  setInterval(function() {
+    if (!document.hidden && myRoom && !socket.connected) {
+      doReconnect();
+    }
+  }, 10000);
 }
 
 function resizeCanvas() {
   var container = document.getElementById('map-container');
+  if (!container || !canvas) return;
   canvas.width = container.clientWidth;
   canvas.height = container.clientHeight;
   render();
 }
 
 function centerCamera() {
-  if (!gameState || !myPlayerNum) return;
-  // Try to find a unit or city belonging to us
+  if (!gameState || !myPlayerNum || !canvas) return;
   for (var i = 0; i < gameState.units.length; i++) {
     var u = gameState.units[i];
     if (u.owner === myPlayerNum) {
-      cam.x = u.x * cam.scale - canvas.width / 2;
-      cam.y = u.y * cam.scale - canvas.height / 2;
+      var cen = hexToScreen(u.x, u.y);
+      cam.x += cen.x - canvas.width / 2;
+      cam.y += cen.y - canvas.height / 2;
       return;
     }
   }
@@ -549,196 +1054,766 @@ function centerCamera() {
 
 // ── Rendering ──────────────────────────────────────────────────────────────
 var COLORS = {
+  void:   '#0d1117',
   fog:    '#111',
   ocean:  '#0d2b4b',
   land:   '#2d5a27',
   cityN:  '#4a4a4a',
   cityP1: '#1a3a6e',
   cityP2: '#6e1a1a',
-  gridLine: 'rgba(255,255,255,0.04)',
+  gridLine: 'rgba(255,255,255,0.10)',
   p1Unit: '#1f6feb',
   p2Unit: '#da3633',
   selected: '#ffd700',
 };
-
-function worldToScreen(wx, wy) {
-  return {
-    x: wx * cam.scale - cam.x,
-    y: wy * cam.scale - cam.y,
-  };
-}
-
-function screenToWorld(sx, sy) {
-  return {
-    x: (sx + cam.x) / cam.scale,
-    y: (sy + cam.y) / cam.scale,
-  };
-}
 
 function render() {
   if (!canvas || !ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   if (!gameState) return;
 
-  var ts = cam.scale;
+  var size = cam.scale;
+  var w = Math.sqrt(3) * size;
+  var h = 2 * size;
+  var vStep = h * 0.75;
+
   var tiles = gameState.tiles;
   var units = gameState.units;
 
-  // Compute visible tile range
-  var startX = Math.max(0, Math.floor(cam.x / ts));
-  var startY = Math.max(0, Math.floor(cam.y / ts));
-  var endX = Math.min(MAP_W - 1, Math.ceil((cam.x + canvas.width) / ts));
-  var endY = Math.min(MAP_H - 1, Math.ceil((cam.y + canvas.height) / ts));
+  var margin = size * 2;
+  var startRow = Math.max(0, Math.floor((cam.y - margin) / vStep));
+  var endRow   = Math.min(MAP_H - 1, Math.ceil((cam.y + canvas.height + margin) / vStep));
 
   // Draw tiles
-  for (var y = startY; y <= endY; y++) {
-    for (var x = startX; x <= endX; x++) {
-      var tile = tiles[y] && tiles[y][x];
+  for (var row = startRow; row <= endRow; row++) {
+    var offsetX = (row % 2 === 1) ? w / 2 : 0;
+    var startCol = Math.max(0, Math.floor((cam.x - offsetX - margin) / w));
+    var endCol   = Math.min(MAP_W - 1, Math.ceil((cam.x - offsetX + canvas.width + margin) / w));
+    for (var col = startCol; col <= endCol; col++) {
+      var tile = tiles[row] && tiles[row][col];
       if (!tile) continue;
-      var sx = Math.floor(x * ts - cam.x);
-      var sy = Math.floor(y * ts - cam.y);
-      var sw = Math.ceil(ts);
-      var sh = Math.ceil(ts);
-
-      if (tile.type === 'fog') {
-        ctx.fillStyle = COLORS.fog;
-        ctx.fillRect(sx, sy, sw, sh);
-        continue;
-      }
-
-      // Base terrain
-      if (tile.type === 'ocean') {
-        ctx.fillStyle = COLORS.ocean;
-      } else if (tile.type === 'land') {
-        ctx.fillStyle = COLORS.land;
-      } else if (tile.type === 'city') {
-        // Draw land base
-        ctx.fillStyle = COLORS.land;
-        ctx.fillRect(sx, sy, sw, sh);
-        // City overlay
-        var co = tile.city ? tile.city.owner : null;
-        ctx.fillStyle = co === 1 ? COLORS.cityP1 : co === 2 ? COLORS.cityP2 : COLORS.cityN;
-      }
-      ctx.fillRect(sx, sy, sw, sh);
-
-      // Grid lines
-      if (ts >= 8) {
-        ctx.strokeStyle = COLORS.gridLine;
-        ctx.strokeRect(sx + 0.5, sy + 0.5, sw - 1, sh - 1);
-      }
-
-      // City icon
-      if (tile.type === 'city' && ts >= 10) {
-        var fontSize = Math.floor(ts * 0.6);
-        ctx.font = fontSize + 'px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🏙️', sx + sw / 2, sy + sh / 2);
-      }
-
-      // City production indicator (small bar)
-      if (tile.type === 'city' && tile.city && tile.city.production && tile.city.owner === myPlayerNum && ts >= 8) {
-        var prog = tile.city.progress;
-        var total = getBuildTime(tile.city.production);
-        var barW = (sw - 2) * (prog / total);
-        ctx.fillStyle = 'rgba(255,215,0,0.6)';
-        ctx.fillRect(sx + 1, sy + sh - 3, barW, 2);
-      }
+      var cen = hexToScreen(col, row);
+      drawHex(ctx, cen.x, cen.y, size, tile, col, row);
     }
   }
 
-  // Draw units
+  // Draw move range overlay for selected unit
+  if (selectedUnit && selectedUnit.owner === myPlayerNum && selectedUnit.movesLeft > 0) {
+    drawMoveRange(selectedUnit, tiles);
+  }
+
+  // Draw units - group by tile, show only most expensive unit per tile
+  var tileUnits = {};
+  for (var i = 0; i < units.length; i++) {
+    var u = units[i];
+    var key = u.y + ',' + u.x;
+    if (!tileUnits[key]) tileUnits[key] = [];
+    tileUnits[key].push(u);
+  }
+
+  // Unit cost priority for picking which to display when stacked
+  var unitCost = { army:2, tank:4, fighter:7, helicopter:6, bomber:5, destroyer:6, submarine:8, transport:8, carrier:12, battleship:14 };
+
+  // Draw one representative unit per tile
+  var drawnTiles = {};
   for (var i = 0; i < units.length; i++) {
     var unit = units[i];
-    if (unit.x < startX - 1 || unit.x > endX + 1 || unit.y < startY - 1 || unit.y > endY + 1) continue;
+    var stackKey = unit.y + ',' + unit.x;
+    if (drawnTiles[stackKey]) continue; // already drew this tile
+    drawnTiles[stackKey] = true;
 
-    var ux = Math.floor(unit.x * ts - cam.x);
-    var uy = Math.floor(unit.y * ts - cam.y);
-    var us = Math.ceil(ts);
-
-    var isSelected = selectedUnit && selectedUnit.id === unit.id;
-    var isOwn = unit.owner === myPlayerNum;
-    var unitColor = unit.owner === 1 ? COLORS.p1Unit : COLORS.p2Unit;
-
-    // Selection ring
-    if (isSelected) {
-      ctx.strokeStyle = COLORS.selected;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(ux + 1, uy + 1, us - 2, us - 2);
+    var stack = tileUnits[stackKey] || [];
+    // Pick the most expensive unit to display
+    var displayUnit = stack[0];
+    for (var si = 1; si < stack.length; si++) {
+      if ((unitCost[stack[si].type] || 0) > (unitCost[displayUnit.type] || 0)) {
+        displayUnit = stack[si];
+      }
     }
 
-    // Unit background dot
-    ctx.fillStyle = unitColor + (isOwn && unit.movesLeft <= 0 ? '55' : 'cc');
-    ctx.beginPath();
-    var r = Math.max(3, ts / 3);
-    ctx.arc(ux + us / 2, uy + us / 2, r, 0, Math.PI * 2);
+    var cen2 = hexToScreen(displayUnit.x, displayUnit.y);
+    if (cen2.x < -size * 2 || cen2.x > canvas.width + size * 2) continue;
+    if (cen2.y < -size * 2 || cen2.y > canvas.height + size * 2) continue;
+
+    var isSelected = selectedUnit && stack.some(function(u) { return u.id === selectedUnit.id; });
+    drawUnit(ctx, cen2.x, cen2.y, size, displayUnit, stack.length, isSelected);
+  }
+}
+
+function drawHex(ctx, cx, cy, size, tile, col, row) {
+  // Void tiles: draw nothing at all — pure background, completely invisible
+  if (tile.type === 'void') {
+    // Fill a slightly oversized rect to cover any anti-aliasing bleed from neighbors
+    ctx.fillStyle = COLORS.void;
+    ctx.fillRect(cx - size - 1, cy - size - 1, (size + 1) * 2, (size + 1) * 2);
+    return;
+  }
+
+  var pts = hexCorners(cx, cy, size - 1);
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (var i = 1; i < 6; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.closePath();
+
+  if (tile.type === 'fog') {
+    ctx.fillStyle = COLORS.fog;
     ctx.fill();
+    return;
+  }
 
-    // Unit emoji
-    if (ts >= 12) {
-      var efs = Math.floor(ts * 0.55);
-      ctx.font = efs + 'px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.globalAlpha = isOwn && unit.movesLeft <= 0 ? 0.4 : 1;
-      ctx.fillText(unit.symbol || '?', ux + us / 2, uy + us / 2);
-      ctx.globalAlpha = 1;
+  var dimmed = tile.dimmed === true;
+  ctx.globalAlpha = dimmed ? 0.45 : 1.0;
+
+  if (tile.type === 'ocean') {
+    ctx.fillStyle = COLORS.ocean;
+    ctx.fill();
+  } else if (tile.type === 'land') {
+    ctx.fillStyle = COLORS.land;
+    ctx.fill();
+  } else if (tile.type === 'city') {
+    ctx.fillStyle = COLORS.land;
+    ctx.fill();
+    ctx.globalAlpha = dimmed ? 0.45 : 1.0;
+  }
+
+  // Hex border
+  if (size >= 8) {
+    ctx.strokeStyle = COLORS.gridLine;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 1.0;
+
+  // City icon - industrial complex silhouette (drawn small, bottom of tile)
+  if (tile.type === 'city' && size >= 12) {
+    ctx.save();
+    ctx.globalAlpha = dimmed ? 0.4 : 0.75; // subtle - doesn't overpower unit icons
+    var co2 = (!dimmed && tile.city) ? tile.city.owner : null;
+    ctx.fillStyle = co2 === 1 ? COLORS.cityP1 : co2 === 2 ? COLORS.cityP2 : COLORS.cityN;
+    drawIconFactory(ctx, cx, cy, size * 0.52);
+    ctx.restore();
+  }
+
+  // City production progress ring — follows hex border
+  if (tile.type === 'city' && tile.city && tile.city.production && tile.city.owner === myPlayerNum && size >= 10) {
+    var prog = tile.city.progress;
+    var total = getBuildTime(tile.city.production);
+    var fraction = Math.min(1, prog / total);
+
+    // Check if just completed (flash green)
+    var cityId = tile.city.id;
+    var isFlashing = false;
+    var ringColor = fraction >= 1 ? '#3fb950' : '#ffd700';
+    if (cityFlashTimers[cityId]) {
+      var elapsed = Date.now() - cityFlashTimers[cityId];
+      if (elapsed < 800) {
+        isFlashing = true;
+        var flashAlpha = 1.0 - elapsed / 800;
+        ringColor = 'rgba(63,185,80,' + flashAlpha + ')';
+      } else {
+        delete cityFlashTimers[cityId];
+      }
     }
 
-    // Fuel indicator for air units
-    if (unit.fuel !== null && ts >= 12 && isOwn) {
-      ctx.fillStyle = unit.fuel <= 3 ? '#f85149' : '#ffd700';
-      ctx.font = '8px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('⛽' + unit.fuel, ux + 1, uy + us - 1);
+    // Hex perimeter progress ring: start at 12 o'clock (top vertex = corners[5]
+    // for pointy-top hex where angle = 60*i - 30 deg, so i=5 → 270° = straight up)
+    // then walk clockwise: 5→0→1→2→3→4→5
+    var corners = hexCorners(cx, cy, size - 1);
+    var ringOrder = [corners[5], corners[0], corners[1], corners[2], corners[3], corners[4], corners[5]];
+
+    // Calculate total perimeter (all sides equal for regular hex)
+    var sideLen = Math.sqrt(
+      Math.pow(ringOrder[1].x - ringOrder[0].x, 2) +
+      Math.pow(ringOrder[1].y - ringOrder[0].y, 2)
+    );
+    var perimeter = sideLen * 6;
+    var drawLen = fraction * perimeter;
+
+    ctx.save();
+    ctx.strokeStyle = ringColor;
+    ctx.lineWidth = Math.max(3, size * 0.18);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    var remaining = drawLen;
+    ctx.moveTo(ringOrder[0].x, ringOrder[0].y);
+    for (var ei = 0; ei < 6 && remaining > 0; ei++) {
+      var from = ringOrder[ei];
+      var to = ringOrder[ei + 1];
+      var edgeLen = Math.sqrt(Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2));
+      if (remaining >= edgeLen) {
+        ctx.lineTo(to.x, to.y);
+        remaining -= edgeLen;
+      } else {
+        // Partial edge
+        var t2 = remaining / edgeLen;
+        ctx.lineTo(from.x + (to.x - from.x) * t2, from.y + (to.y - from.y) * t2);
+        remaining = 0;
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+    // Ghost icon: show unit being built, dim so it reads as "in production"
+    if (size >= 14) {
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#ffffff';
+      drawIconByType(ctx, tile.city.production, cx, cy - size * 0.06, size * 0.62);
+      ctx.restore();
+    }
+  }
+}
+
+// ── Unit Icon Drawing ─────────────────────────────────────────────────────
+function drawHexBadge(ctx, cx, cy, r, fillColor, alpha) {
+  // Pointy-top hexagon
+  ctx.beginPath();
+  for (var i = 0; i < 6; i++) {
+    var angle = Math.PI / 3 * i - Math.PI / 6;
+    var px = cx + r * Math.cos(angle);
+    var py = cy + r * Math.sin(angle);
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.globalAlpha = alpha !== undefined ? alpha : 1;
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+
+function drawIconFactory(ctx, cx, cy, s) {
+  // Industrial complex: flat building base + 3 smokestacks
+  // Base building
+  ctx.fillRect(cx - s * 0.72, cy + s * 0.1, s * 1.44, s * 0.55);
+  // Roof crenellation (3 raised sections)
+  ctx.fillRect(cx - s * 0.72, cy - s * 0.08, s * 0.38, s * 0.2);
+  ctx.fillRect(cx - s * 0.19, cy - s * 0.08, s * 0.38, s * 0.2);
+  ctx.fillRect(cx + s * 0.34, cy - s * 0.08, s * 0.38, s * 0.2);
+  // 3 smokestacks
+  ctx.fillRect(cx - s * 0.58, cy - s * 0.62, s * 0.16, s * 0.56);
+  ctx.fillRect(cx - s * 0.08, cy - s * 0.72, s * 0.16, s * 0.66);
+  ctx.fillRect(cx + s * 0.42, cy - s * 0.56, s * 0.16, s * 0.5);
+  // Smoke puff tops (small circles)
+  ctx.beginPath(); ctx.arc(cx - s * 0.5, cy - s * 0.68, s * 0.12, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy - s * 0.8, s * 0.12, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + s * 0.5, cy - s * 0.62, s * 0.12, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawIconInfantry(ctx, cx, cy, s) {
+  // Head
+  ctx.beginPath();
+  ctx.arc(cx + s * 0.1, cy - s * 0.55, s * 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  // Body
+  ctx.fillRect(cx - s * 0.1, cy - s * 0.35, s * 0.4, s * 0.45);
+  // Legs
+  ctx.fillRect(cx - s * 0.12, cy + s * 0.1, s * 0.16, s * 0.35);
+  ctx.fillRect(cx + s * 0.06, cy + s * 0.1, s * 0.16, s * 0.35);
+  // Rifle barrel (forward)
+  ctx.fillRect(cx + s * 0.28, cy - s * 0.28, s * 0.45, s * 0.08);
+}
+
+function drawIconTank(ctx, cx, cy, s) {
+  // Hull
+  ctx.fillRect(cx - s * 0.7, cy - s * 0.05, s * 1.4, s * 0.42);
+  // Turret
+  ctx.fillRect(cx - s * 0.18, cy - s * 0.3, s * 0.5, s * 0.28);
+  // Barrel
+  ctx.fillRect(cx + s * 0.3, cy - s * 0.21, s * 0.55, s * 0.1);
+  // Wheels
+  var wr = s * 0.1;
+  var wy = cy + s * 0.32;
+  for (var wi = 0; wi < 5; wi++) {
+    ctx.beginPath();
+    ctx.arc(cx - s * 0.56 + wi * s * 0.28, wy, wr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawIconFighter(ctx, cx, cy, s) {
+  // Fuselage
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.75, cy);
+  ctx.lineTo(cx - s * 0.55, cy - s * 0.12);
+  ctx.lineTo(cx - s * 0.75, cy);
+  ctx.lineTo(cx - s * 0.55, cy + s * 0.12);
+  ctx.closePath();
+  ctx.fill();
+  // Swept delta wings
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.05, cy);
+  ctx.lineTo(cx - s * 0.45, cy - s * 0.55);
+  ctx.lineTo(cx - s * 0.55, cy - s * 0.15);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.05, cy);
+  ctx.lineTo(cx - s * 0.45, cy + s * 0.55);
+  ctx.lineTo(cx - s * 0.55, cy + s * 0.15);
+  ctx.closePath();
+  ctx.fill();
+  // Tail fin
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.6, cy);
+  ctx.lineTo(cx - s * 0.75, cy - s * 0.28);
+  ctx.lineTo(cx - s * 0.75, cy);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawIconHelicopter(ctx, cx, cy, s) {
+  // Fuselage oval
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + s * 0.1, s * 0.55, s * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Main rotor (horizontal line)
+  ctx.fillRect(cx - s * 0.75, cy - s * 0.15, s * 1.5, s * 0.07);
+  // Tail boom
+  ctx.fillRect(cx + s * 0.5, cy + s * 0.05, s * 0.4, s * 0.08);
+  // Tail rotor
+  ctx.fillRect(cx + s * 0.82, cy - s * 0.12, s * 0.07, s * 0.28);
+}
+
+function drawIconBomber(ctx, cx, cy, s) {
+  // Wide fuselage
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.75, cy);
+  ctx.lineTo(cx - s * 0.45, cy - s * 0.2);
+  ctx.lineTo(cx - s * 0.75, cy);
+  ctx.lineTo(cx - s * 0.45, cy + s * 0.2);
+  ctx.closePath();
+  ctx.fill();
+  // Wide straight wings
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.1, cy - s * 0.08);
+  ctx.lineTo(cx - s * 0.2, cy - s * 0.65);
+  ctx.lineTo(cx - s * 0.4, cy - s * 0.65);
+  ctx.lineTo(cx - s * 0.3, cy - s * 0.08);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.1, cy + s * 0.08);
+  ctx.lineTo(cx - s * 0.2, cy + s * 0.65);
+  ctx.lineTo(cx - s * 0.4, cy + s * 0.65);
+  ctx.lineTo(cx - s * 0.3, cy + s * 0.08);
+  ctx.closePath();
+  ctx.fill();
+  // Engine bumps
+  ctx.beginPath();
+  ctx.ellipse(cx - s * 0.12, cy - s * 0.38, s * 0.1, s * 0.07, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx - s * 0.12, cy + s * 0.38, s * 0.1, s * 0.07, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawIconDestroyer(ctx, cx, cy, s) {
+  // Hull
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.75, cy + s * 0.15);
+  ctx.lineTo(cx + s * 0.75, cy + s * 0.15);
+  ctx.lineTo(cx + s * 0.6, cy - s * 0.05);
+  ctx.lineTo(cx - s * 0.6, cy - s * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  // Bow
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.75, cy + s * 0.15);
+  ctx.lineTo(cx + s * 0.9, cy + s * 0.05);
+  ctx.lineTo(cx + s * 0.6, cy - s * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  // Superstructure tower
+  ctx.fillRect(cx - s * 0.12, cy - s * 0.05, s * 0.28, s * 0.22);
+  ctx.fillRect(cx - s * 0.06, cy - s * 0.22, s * 0.16, s * 0.18);
+}
+
+function drawIconSubmarine(ctx, cx, cy, s) {
+  // Main body torpedo shape
+  ctx.beginPath();
+  ctx.ellipse(cx - s * 0.05, cy + s * 0.1, s * 0.72, s * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Conning tower
+  ctx.fillRect(cx - s * 0.12, cy - s * 0.12, s * 0.26, s * 0.22);
+  // Periscope
+  ctx.fillRect(cx + s * 0.06, cy - s * 0.28, s * 0.06, s * 0.18);
+  // Rudder
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.7, cy + s * 0.06);
+  ctx.lineTo(cx - s * 0.85, cy - s * 0.08);
+  ctx.lineTo(cx - s * 0.72, cy - s * 0.04);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawIconTransport(ctx, cx, cy, s) {
+  // Wide flat hull
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.8, cy + s * 0.2);
+  ctx.lineTo(cx + s * 0.8, cy + s * 0.2);
+  ctx.lineTo(cx + s * 0.65, cy - s * 0.05);
+  ctx.lineTo(cx - s * 0.65, cy - s * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  // Bow
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.8, cy + s * 0.2);
+  ctx.lineTo(cx + s * 0.92, cy + s * 0.08);
+  ctx.lineTo(cx + s * 0.65, cy - s * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  // Boxy superstructure
+  ctx.fillRect(cx - s * 0.22, cy - s * 0.05, s * 0.5, s * 0.28);
+  ctx.fillRect(cx - s * 0.06, cy - s * 0.22, s * 0.2, s * 0.18);
+  // Crane/boom hint
+  ctx.fillRect(cx + s * 0.3, cy - s * 0.22, s * 0.06, s * 0.2);
+}
+
+function drawIconCarrier(ctx, cx, cy, s) {
+  // Very long flat hull
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.85, cy + s * 0.22);
+  ctx.lineTo(cx + s * 0.85, cy + s * 0.22);
+  ctx.lineTo(cx + s * 0.72, cy);
+  ctx.lineTo(cx - s * 0.72, cy);
+  ctx.closePath();
+  ctx.fill();
+  // Bow
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.85, cy + s * 0.22);
+  ctx.lineTo(cx + s * 0.95, cy + s * 0.12);
+  ctx.lineTo(cx + s * 0.72, cy);
+  ctx.closePath();
+  ctx.fill();
+  // Flat flight deck (wider)
+  ctx.fillRect(cx - s * 0.7, cy - s * 0.06, s * 1.35, s * 0.08);
+  // Island superstructure on right
+  ctx.fillRect(cx + s * 0.42, cy - s * 0.06, s * 0.22, s * 0.32);
+  ctx.fillRect(cx + s * 0.48, cy - s * 0.26, s * 0.1, s * 0.2);
+  // Flight deck edge line (darker - not visible without contrast, skip)
+}
+
+function drawIconBattleship(ctx, cx, cy, s) {
+  // Wide hull
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.75, cy + s * 0.2);
+  ctx.lineTo(cx + s * 0.75, cy + s * 0.2);
+  ctx.lineTo(cx + s * 0.6, cy - s * 0.05);
+  ctx.lineTo(cx - s * 0.6, cy - s * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  // Bow
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.75, cy + s * 0.2);
+  ctx.lineTo(cx + s * 0.9, cy + s * 0.08);
+  ctx.lineTo(cx + s * 0.6, cy - s * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  // Prominent superstructure
+  ctx.fillRect(cx - s * 0.08, cy - s * 0.05, s * 0.32, s * 0.28);
+  ctx.fillRect(cx - s * 0.02, cy - s * 0.28, s * 0.2, s * 0.24);
+  ctx.fillRect(cx + s * 0.06, cy - s * 0.42, s * 0.06, s * 0.16);
+  // Turret bumps
+  ctx.beginPath();
+  ctx.arc(cx - s * 0.38, cy, s * 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(cx - s * 0.38, cy - s * 0.04, s * 0.28, s * 0.06);
+  ctx.beginPath();
+  ctx.arc(cx + s * 0.5, cy, s * 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(cx + s * 0.28, cy - s * 0.04, s * 0.28, s * 0.06);
+}
+// ──────────────────────────────────────────────────────────────────────────
+
+function drawUnit(ctx, cx, cy, size, unit, stackCount, isSelected) {
+  var isOwn = unit.owner === myPlayerNum;
+  var alpha = (isOwn && unit.movesLeft <= 0) ? 0.4 : 1.0;
+
+  if (size < 10) {
+    // Tiny fallback dot
+    var unitColor = unit.owner === 1 ? COLORS.p1Unit : COLORS.p2Unit;
+    ctx.fillStyle = unitColor;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(2, size * 0.35), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    return;
+  }
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  var color = unit.owner === 1 ? '#1f6feb' : unit.owner === 2 ? '#da3633' : '#555';
+
+  // Gold selection glow
+  if (isSelected) {
+    var pts = hexCorners(cx, cy, size + 3);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (var pi = 1; pi < pts.length; pi++) ctx.lineTo(pts[pi].x, pts[pi].y);
+    ctx.closePath();
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // Bottom strip - clip to hex shape, fill bottom ~1/5 with player color
+  var hexPts = hexCorners(cx, cy, size - 1);
+  ctx.beginPath();
+  ctx.moveTo(hexPts[0].x, hexPts[0].y);
+  for (var pi = 1; pi < hexPts.length; pi++) ctx.lineTo(hexPts[pi].x, hexPts[pi].y);
+  ctx.closePath();
+  ctx.save();
+  ctx.clip();
+  // Strip height = bottom ~22% of hex
+  var stripTop = cy + size * 0.55;
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - size, stripTop, size * 2, size * 0.6);
+  ctx.restore();
+
+  // Draw large white unit icon centered slightly above middle to leave room for strip
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#ffffff';
+  var s = size * 0.72; // large icon scale
+  var iconCy = cy - size * 0.06; // shift icon slightly up
+  drawIconByType(ctx, unit.type, cx, iconCy, s);
+
+  // Stack count badge (top-right corner)
+  if (stackCount > 1 && size >= 14) {
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    ctx.arc(cx + size * 0.52, cy - size * 0.52, size * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold ' + Math.floor(size * 0.25) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(stackCount, cx + size * 0.52, cy - size * 0.52);
+  }
+
+  // Fuel warning (bottom-left, inside strip)
+  if (unit.fuel !== null && unit.fuel <= 4 && size >= 14 && isOwn) {
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ff4444';
+    ctx.font = 'bold ' + Math.floor(size * 0.22) + 'px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⚠', cx - size * 0.55, stripTop + size * 0.18);
+  }
+
+  // Cargo dot on transport
+  if (unit.type === 'transport' && unit.cargo && unit.cargo.length > 0 && size >= 12) {
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#3fb950';
+    ctx.beginPath();
+    ctx.arc(cx - size * 0.52, cy - size * 0.52, size * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + Math.floor(size * 0.2) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(unit.cargo.length, cx - size * 0.52, cy - size * 0.52);
+  }
+
+  ctx.restore();
+}
+
+function drawIconByType(ctx, type, cx, cy, s) {
+  if (type === 'army') drawIconInfantry(ctx, cx, cy, s);
+  else if (type === 'tank') drawIconTank(ctx, cx, cy, s);
+  else if (type === 'fighter') drawIconFighter(ctx, cx, cy, s);
+  else if (type === 'helicopter') drawIconHelicopter(ctx, cx, cy, s);
+  else if (type === 'bomber') drawIconBomber(ctx, cx, cy, s);
+  else if (type === 'destroyer') drawIconDestroyer(ctx, cx, cy, s);
+  else if (type === 'submarine') drawIconSubmarine(ctx, cx, cy, s);
+  else if (type === 'transport') drawIconTransport(ctx, cx, cy, s);
+  else if (type === 'carrier') drawIconCarrier(ctx, cx, cy, s);
+  else if (type === 'battleship') drawIconBattleship(ctx, cx, cy, s);
+  else {
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ── Move Range Highlight ───────────────────────────────────────────────────
+function drawMoveRange(su, tiles) {
+  var size = cam.scale;
+  var domain = getDomain(su.type);
+
+  // For air units: draw fuel range in yellow BEHIND the move range
+  if (domain === 'air' && su.fuel !== null && su.fuel > 0) {
+    var fuelReachable = {};
+    var fuelVisited = {};
+    var fuelQueue = [{ col: su.x, row: su.y, dist: 0 }];
+    fuelVisited[su.y + ',' + su.x] = true;
+    while (fuelQueue.length) {
+      var fc = fuelQueue.shift();
+      if (fc.dist > 0) fuelReachable[fc.row + ',' + fc.col] = { col: fc.col, row: fc.row };
+      if (fc.dist >= su.fuel) continue;
+      var fnbs = hexNeighbors(fc.col, fc.row);
+      for (var fi = 0; fi < fnbs.length; fi++) {
+        var fnb = fnbs[fi];
+        var fnk = fnb.y + ',' + fnb.x;
+        if (!fuelVisited[fnk]) {
+          fuelVisited[fnk] = true;
+          fuelQueue.push({ col: fnb.x, row: fnb.y, dist: fc.dist + 1 });
+        }
+      }
+    }
+    for (var fkey in fuelReachable) {
+      var fh = fuelReachable[fkey];
+      var fcen = hexToScreen(fh.col, fh.row);
+      if (fcen.x < -size * 3 || fcen.x > canvas.width + size * 3) continue;
+      if (fcen.y < -size * 3 || fcen.y > canvas.height + size * 3) continue;
+      var fpts = hexCorners(fcen.x, fcen.y, size - 1);
+      ctx.beginPath();
+      ctx.moveTo(fpts[0].x, fpts[0].y);
+      for (var fk = 1; fk < 6; fk++) ctx.lineTo(fpts[fk].x, fpts[fk].y);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,220,0,0.07)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,220,0,0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
   }
 
-  // Selected unit movement range overlay
-  if (selectedUnit && selectedUnit.owner === myPlayerNum && selectedUnit.movesLeft > 0) {
-    var su = selectedUnit;
-    var range = su.movesLeft;
-    ctx.fillStyle = 'rgba(255,215,0,0.08)';
-    for (var dy = -range; dy <= range; dy++) {
-      for (var dx = -range; dx <= range; dx++) {
-        var tx2 = su.x + dx, ty2 = su.y + dy;
-        if (tx2 < 0 || tx2 >= MAP_W || ty2 < 0 || ty2 >= MAP_H) continue;
-        if (Math.abs(dx) + Math.abs(dy) > range) continue;
-        var tile2 = tiles[ty2] && tiles[ty2][tx2];
-        if (!tile2 || tile2.type === 'fog') continue;
-        if (!canUnitMoveTo(su, tile2)) continue;
-        ctx.fillRect(
-          Math.floor(tx2 * ts - cam.x),
-          Math.floor(ty2 * ts - cam.y),
-          Math.ceil(ts), Math.ceil(ts)
-        );
+  // BFS up to movesLeft hex distance - collect reachable tiles
+  var reachable = {};
+  var visited = {};
+  var queue = [{ col: su.x, row: su.y, dist: 0 }];
+  visited[su.y + ',' + su.x] = true;
+
+  while (queue.length) {
+    var cur = queue.shift();
+    if (cur.dist > 0) {
+      var tile = tiles[cur.row] && tiles[cur.row][cur.col];
+      if (tile && canUnitMoveTo(su, tile)) {
+        reachable[cur.row + ',' + cur.col] = { col: cur.col, row: cur.row };
       }
     }
+    if (cur.dist >= su.movesLeft) continue;
+    var nbs = hexNeighbors(cur.col, cur.row);
+    for (var ni = 0; ni < nbs.length; ni++) {
+      var nb = nbs[ni];
+      var nk = nb.y + ',' + nb.x;
+      if (!visited[nk]) {
+        visited[nk] = true;
+        var nbTile = tiles[nb.y] && tiles[nb.y][nb.x];
+        if (nbTile && canUnitMoveTo(su, nbTile)) {
+          queue.push({ col: nb.x, row: nb.y, dist: cur.dist + 1 });
+        }
+      }
+    }
+  }
+
+  var moveUnits = gameState ? gameState.units : [];
+
+  // Draw highlight border on reachable hexes
+  for (var key in reachable) {
+    var h = reachable[key];
+    var cen = hexToScreen(h.col, h.row);
+    // Skip if offscreen
+    if (cen.x < -size * 3 || cen.x > canvas.width + size * 3) continue;
+    if (cen.y < -size * 3 || cen.y > canvas.height + size * 3) continue;
+
+    // Check if hex is full (red highlight = can't move here unless fighting)
+    var hexFull = isTileFull(tiles, h.col, h.row, moveUnits);
+
+    var pts = hexCorners(cen.x, cen.y, size - 1);
+
+    // Translucent fill
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (var k = 1; k < 6; k++) ctx.lineTo(pts[k].x, pts[k].y);
+    ctx.closePath();
+    ctx.fillStyle = hexFull ? 'rgba(255,80,80,0.10)' : 'rgba(0,191,255,0.12)';
+    ctx.fill();
+
+    // Glowing border
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (var k = 1; k < 6; k++) ctx.lineTo(pts[k].x, pts[k].y);
+    ctx.closePath();
+    ctx.strokeStyle = hexFull ? 'rgba(255,80,80,0.55)' : 'rgba(0,191,255,0.75)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Draw unload destination highlights (green pulsing hexes)
+  if (unloadHexes) {
+    var pulse = 0.55 + 0.35 * Math.sin(Date.now() / 250);
+    for (var ui = 0; ui < unloadHexes.length; ui++) {
+      var uh = unloadHexes[ui];
+      var ucen = hexToScreen(uh.x, uh.y);
+      if (ucen.x < -size * 3 || ucen.x > canvas.width + size * 3) continue;
+      if (ucen.y < -size * 3 || ucen.y > canvas.height + size * 3) continue;
+      var upts = hexCorners(ucen.x, ucen.y, size - 1);
+      ctx.beginPath();
+      ctx.moveTo(upts[0].x, upts[0].y);
+      for (var uk = 1; uk < 6; uk++) ctx.lineTo(upts[uk].x, upts[uk].y);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(60,220,100,' + (pulse * 0.22) + ')';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(60,220,100,' + pulse + ')';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    // Request continuous redraw so pulse animates
+    requestAnimationFrame(render);
   }
 }
 
 function canUnitMoveTo(unit, tile) {
   var domain = getDomain(unit.type);
-  if (domain === 'air') return tile.type !== 'fog';
-  if (domain === 'land') return tile.type === 'land' || tile.type === 'city';
-  if (domain === 'sea') return tile.type === 'ocean';
+  // Void tiles are never passable
+  if (tile.type === 'void') return false;
+  // Fog tiles are treated as potentially passable — the server validates actual terrain
+  if (domain === 'air') return true; // air goes anywhere incl fog
+  if (domain === 'land') return tile.type === 'land' || tile.type === 'city' || tile.type === 'fog';
+  if (domain === 'sea') {
+    if (tile.type === 'ocean') return true;
+    if (tile.type === 'city' && tile.city && tile.city.coastal) return true;
+    if (tile.type === 'fog') return true; // unknown — allow, server validates
+    return false;
+  }
   return false;
 }
 
+function isTileFull(tiles, x, y, units) {
+  // Count units physically on tile (not in cargo)
+  var count = 0;
+  for (var i = 0; i < units.length; i++) {
+    if (units[i].x === x && units[i].y === y) count++;
+  }
+  return count >= 2;
+}
+
 function getDomain(type) {
-  var domains = { army: 'land', fighter: 'air', bomber: 'air', destroyer: 'sea', submarine: 'sea', transport: 'sea', carrier: 'sea', battleship: 'sea' };
-  return domains[type] || 'land';
+  var d = { army:'land', tank:'land', fighter:'air', helicopter:'air', bomber:'air', destroyer:'sea', submarine:'sea', transport:'sea', carrier:'sea', battleship:'sea' };
+  return d[type] || 'land';
+}
+
+function getUnitDisplayName(type) {
+  if (type === 'army') return 'Infantry';
+  return capitalize(type);
 }
 
 function getBuildTime(type) {
-  var times = { army: 5, fighter: 3, destroyer: 6, submarine: 8, transport: 8, carrier: 12, battleship: 14, bomber: 5 };
-  return times[type] || 5;
+  // Keep in sync with server.js UNIT_DEFS buildTime values
+  var t = { army:1, tank:2, fighter:4, bomber:5, submarine:4, destroyer:4, transport:3, carrier:8, battleship:8 };
+  return t[type] || 1;
 }
 
-// ── HUD ──────────────────────────────────────────────────────────────────
+// ── HUD ───────────────────────────────────────────────────────────────────
 function updateHUD() {
   if (!gameState) return;
   var state = gameState;
@@ -748,49 +1823,241 @@ function updateHUD() {
   badge.className = 'player-badge p' + myPlayerNum;
   document.getElementById('tb-turn').textContent = state.turn;
 
-  // Score
   var p1c = countCitiesForPlayer(state, 1), p2c = countCitiesForPlayer(state, 2);
   document.getElementById('tb-score').textContent = 'Cities: P1 ' + p1c + ' | P2 ' + p2c;
 
-  // End turn button
   var btn = document.getElementById('end-turn-btn');
-  if (state.myTurnEnded) {
-    btn.textContent = 'Waiting…';
+  btn.disabled = false;
+  btn.classList.remove('done');
+  // Sequential turn system: button only active when it's your turn
+  if (state.isMyTurn === false) {
+    btn.textContent = "Opponent's Turn...";
+    btn.classList.add('done');
+    btn.disabled = true;
+  } else if (state.myTurnEnded) {
+    btn.textContent = 'Waiting...';
     btn.classList.add('done');
     btn.disabled = true;
   } else {
     btn.textContent = 'End Turn';
-    btn.classList.remove('done');
-    btn.disabled = false;
   }
 
-  // Timer
   startCountdown(state.turnDeadline);
 
-  // Unit info
+  document.getElementById('prod-select-wrap').style.display = 'none';
+  document.getElementById('transport-actions').style.display = 'none';
+
   if (selectedUnit) {
     var u = state.units.find(function(u2) { return u2.id === selectedUnit.id; });
     if (u) {
       selectedUnit = u;
-      var info = (u.symbol || '') + ' ' + capitalize(u.type);
+      var info = (u.symbol || '') + ' ' + getUnitDisplayName(u.type);
       info += ' | Moves: ' + u.movesLeft;
       if (u.fuel !== null) info += ' | Fuel: ' + u.fuel;
-      document.getElementById('unit-details').textContent = info;
-      document.getElementById('prod-select-wrap').style.display = 'none';
+      if (u.cargo && u.cargo.length > 0) info += ' | Cargo: ' + u.cargo.length;
+      var _ud = document.getElementById('unit-details'); if (_ud) _ud.textContent = info;
+
+      if (u.type === 'transport' && u.owner === myPlayerNum) {
+        updateTransportUI(u, state);
+      }
+
+      // If land unit selected, check for adjacent friendly transports to board
+      if (getDomain(u.type) === 'land' && u.owner === myPlayerNum && u.movesLeft > 0) {
+        var nbs = hexNeighborsList(u.x, u.y);
+        // Also include same tile
+        var checkPositions = nbs.concat([{x: u.x, y: u.y}]);
+        var nearbyTransports = state.units.filter(function(t) {
+          return t.owner === myPlayerNum && t.type === 'transport' &&
+            checkPositions.some(function(p) { return p.x === t.x && p.y === t.y; });
+        });
+        if (nearbyTransports.length > 0) {
+          var ta2 = document.getElementById('transport-actions');
+          var btns2 = document.getElementById('transport-btns');
+          ta2.style.display = 'flex';
+          nearbyTransports.forEach(function(tr) {
+            var usedSlots2 = 0;
+            if (tr.cargo) tr.cargo.forEach(function(c) { usedSlots2 += (c.type === 'tank' ? 2 : 1); });
+            var unitSlots = (u.type === 'tank') ? 2 : 1;
+            if (usedSlots2 + unitSlots <= 3) {
+              var dist = (tr.x === u.x && tr.y === u.y) ? 'same tile' : 'adjacent';
+              var bb = document.createElement('button');
+              bb.className = 'btn-sm';
+              bb.textContent = '⛴️ Board Transport (' + dist + ')';
+              bb.onclick = (function(transportId, unitId) {
+                return function() {
+                  socket.emit('loadUnit', { roomCode: myRoom, transportId: transportId, unitId: unitId });
+                  clearSelection();
+                };
+              })(tr.id, u.id);
+              btns2.appendChild(bb);
+            }
+          });
+        }
+      }
+    } else {
+      clearSelection();
+      // unit-details removed
     }
   } else if (selectedCityPos) {
     var ct = state.tiles[selectedCityPos.y] && state.tiles[selectedCityPos.y][selectedCityPos.x];
     if (ct && ct.type === 'city' && ct.city && ct.city.owner === myPlayerNum) {
-      document.getElementById('unit-details').textContent = 'City — producing: ' + (ct.city.production || 'none') + ' (' + ct.city.progress + '/' + getBuildTime(ct.city.production) + ')';
+      var isCoastal = ct.city.coastal;
+      // unit-details removed
+      var navalTypes = ['destroyer','submarine','transport','carrier','battleship'];
+      var sel = document.getElementById('prod-select');
+      for (var oi = 0; oi < sel.options.length; oi++) {
+        var opt = sel.options[oi];
+        if (navalTypes.indexOf(opt.value) >= 0) {
+          opt.disabled = !isCoastal;
+          opt.style.color = isCoastal ? '' : '#555';
+        }
+      }
+      if (!isCoastal && navalTypes.indexOf(ct.city.production) >= 0) sel.value = '';
+      else sel.value = ct.city.production || '';
       document.getElementById('prod-select-wrap').style.display = 'flex';
-      document.getElementById('prod-select').value = ct.city.production || '';
     } else {
       clearSelection();
     }
   } else {
-    document.getElementById('unit-details').textContent = 'Tap a unit to select';
-    document.getElementById('prod-select-wrap').style.display = 'none';
+    // unit-details removed
   }
+}
+
+function updateTransportUI(transport, state) {
+  var ta = document.getElementById('transport-actions');
+  var btns = document.getElementById('transport-btns');
+  ta.style.display = 'flex';
+  btns.innerHTML = '';
+
+  var sameTileUnits = state.units.filter(function(u) {
+    return u.owner === myPlayerNum && u.id !== transport.id
+      && u.x === transport.x && u.y === transport.y
+      && (getDomain(u.type) === 'land');
+  });
+
+  var usedSlots = 0;
+  if (transport.cargo) {
+    for (var ci = 0; ci < transport.cargo.length; ci++) {
+      var ctype = transport.cargo[ci].type;
+      usedSlots += (ctype === 'tank' ? 2 : 1);
+    }
+  }
+  var capacity = 3; // infantry=1 slot, tank=2 slots; max 3 slots (1 inf + 1 tank, or 3 inf)
+
+  if (sameTileUnits.length > 0 && usedSlots < capacity) {
+    sameTileUnits.forEach(function(lu) {
+      var slots = (lu.type === 'tank') ? 2 : 1;
+      if (usedSlots + slots <= capacity) {
+        var b = document.createElement('button');
+        b.className = 'btn-sm';
+        b.textContent = 'Load ' + (lu.symbol || getUnitDisplayName(lu.type));
+        b.onclick = (function(unitId) {
+          return function() {
+            socket.emit('loadUnit', { roomCode: myRoom, transportId: transport.id, unitId: unitId });
+          };
+        })(lu.id);
+        btns.appendChild(b);
+      }
+    });
+  }
+
+  if (transport.cargo && transport.cargo.length > 0) {
+    var adjLand = hexNeighborsList(transport.x, transport.y).filter(function(nb) {
+      var t = state.tiles[nb.y] && state.tiles[nb.y][nb.x];
+      return t && (t.type === 'land' || t.type === 'city');
+    });
+    if (adjLand.length > 0) {
+      // One unload button per cargo unit — clicking activates hex highlights on map
+      transport.cargo.forEach(function(cargoUnit, ci) {
+        var ub = document.createElement('button');
+        ub.className = 'btn-sm green';
+        var isActive = unloadTransportId === transport.id && unloadCargoIndex === ci;
+        ub.textContent = (isActive ? '✅ ' : '') + 'Unload ' + (cargoUnit.symbol || '') + ' ' + getUnitDisplayName(cargoUnit.type);
+        ub.style.border = isActive ? '2px solid #3fdc64' : '';
+        ub.onclick = (function(cIdx) {
+          return function() {
+            if (unloadTransportId === transport.id && unloadCargoIndex === cIdx) {
+              // Toggle off
+              clearUnloadMode();
+            } else {
+              // Activate highlight mode for this cargo slot
+              unloadHexes = adjLand;
+              unloadTransportId = transport.id;
+              unloadCargoIndex = cIdx;
+              showToast('Tap a green hex to unload');
+            }
+            updateSidebar();
+            render();
+          };
+        })(ci);
+        btns.appendChild(ub);
+      });
+    }
+  }
+
+  if (transport.cargo && transport.cargo.length > 0) {
+    var lbl = document.createElement('div');
+    lbl.style.fontSize = '0.72rem';
+    lbl.style.color = 'var(--muted)';
+    lbl.style.marginTop = '4px';
+    lbl.textContent = 'Cargo: ' + transport.cargo.map(function(c) { return c.symbol + ' ' + getUnitDisplayName(c.type); }).join(', ') + ' (' + usedSlots + '/' + capacity + ' slots)';
+    btns.appendChild(lbl);
+  }
+}
+
+function hexNeighborsList(col, row) {
+  var dirs = (row % 2 === 0) ? HEX_NEIGHBORS_EVEN : HEX_NEIGHBORS_ODD;
+  var result = [];
+  for (var i = 0; i < dirs.length; i++) {
+    var nc = col + dirs[i][0], nr = row + dirs[i][1];
+    if (nc >= 0 && nc < MAP_W && nr >= 0 && nr < MAP_H)
+      result.push({ x: nc, y: nr });
+  }
+  return result;
+}
+
+function showUnloadPicker(transport, adjLand) {
+  var picker = document.getElementById('unload-picker');
+  var list = document.getElementById('unload-list');
+  list.innerHTML = '';
+
+  transport.cargo.forEach(function(cargoUnit, ci) {
+    adjLand.forEach(function(nb) {
+      var item = document.createElement('div');
+      item.className = 'unload-unit';
+      var tile = gameState.tiles[nb.y] && gameState.tiles[nb.y][nb.x];
+      var tileLabel = tile ? (tile.type === 'city' ? '🏙️' : '🌿') : '?';
+      item.textContent = (cargoUnit.symbol || getUnitDisplayName(cargoUnit.type)) + ' → ' + tileLabel + ' (' + nb.x + ',' + nb.y + ')';
+      item.onclick = (function(tidx, tx, ty) {
+        return function() {
+          socket.emit('unloadUnit', { roomCode: myRoom, transportId: transport.id, cargoIndex: tidx, toX: tx, toY: ty });
+          hideUnloadPicker();
+        };
+      })(ci, nb.x, nb.y);
+      list.appendChild(item);
+    });
+  });
+
+  var sidebar = document.getElementById('sidebar');
+  var rect = sidebar.getBoundingClientRect();
+  picker.style.left = '10px';
+  picker.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+  picker.style.top = 'auto';
+  picker.style.display = 'flex';
+
+  setTimeout(function() {
+    document.addEventListener('click', hideUnloadPicker, { once: true });
+  }, 10);
+}
+
+function hideUnloadPicker() {
+  document.getElementById('unload-picker').style.display = 'none';
+}
+
+function clearUnloadMode() {
+  unloadHexes = null;
+  unloadTransportId = null;
+  unloadCargoIndex = null;
 }
 
 function countCitiesForPlayer(state, pid) {
@@ -817,13 +2084,11 @@ function startCountdown(deadline) {
   countdownInterval = setInterval(tick, 500);
 }
 
-// ── Input: Pan/Zoom ────────────────────────────────────────────────────────
+// ── Pan / Zoom ─────────────────────────────────────────────────────────────
 var dragStart = null, didDrag = false;
-var lastTouchEnd = 0;
 
 function onPointerDown(e) {
   dragStart = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y };
-  cam.isDragging = false;
   didDrag = false;
 }
 
@@ -853,26 +2118,29 @@ function onWheel(e) {
 }
 
 function zoomAt(sx, sy, factor) {
-  var wx = (sx + cam.x) / cam.scale;
-  var wy = (sy + cam.y) / cam.scale;
-  cam.scale = Math.max(6, Math.min(40, cam.scale * factor));
-  cam.x = wx * cam.scale - sx;
-  cam.y = wy * cam.scale - sy;
+  var wx = sx + cam.x;
+  var wy = sy + cam.y;
+  cam.scale = Math.max(10, Math.min(52, cam.scale * factor));
+  cam.x = wx - sx;
+  cam.y = wy - sy;
   clampCamera();
   render();
 }
 
 function clampCamera() {
-  var maxX = MAP_W * cam.scale - canvas.width;
-  var maxY = MAP_H * cam.scale - canvas.height;
-  cam.x = Math.max(-canvas.width * 0.3, Math.min(maxX + canvas.width * 0.3, cam.x));
-  cam.y = Math.max(-canvas.height * 0.3, Math.min(maxY + canvas.height * 0.3, cam.y));
+  var size = cam.scale;
+  var w = Math.sqrt(3) * size;
+  var h = 2 * size;
+  var mapW = MAP_W * w + w / 2;
+  var mapH = MAP_H * h * 0.75 + h * 0.25;
+  var pad = size * 3;
+  cam.x = Math.max(-pad, Math.min(mapW - canvas.width + pad, cam.x));
+  cam.y = Math.max(-pad, Math.min(mapH - canvas.height + pad, cam.y));
 }
 
-// Touch handling
-var touches0 = null;
 function onTouchStart(e) {
   e.preventDefault();
+  hideUnitPicker();
   if (e.touches.length === 1) {
     var t = e.touches[0];
     dragStart = { x: t.clientX, y: t.clientY, cx: cam.x, cy: cam.y };
@@ -892,7 +2160,7 @@ function onTouchMove(e) {
     var t = e.touches[0];
     var dx = t.clientX - dragStart.x;
     var dy = t.clientY - dragStart.y;
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
       cam.isDragging = true;
       didDrag = true;
       cam.x = dragStart.cx - dx;
@@ -902,16 +2170,16 @@ function onTouchMove(e) {
     }
   } else if (e.touches.length === 2 && pinchDist0 !== null) {
     var t1 = e.touches[0], t2 = e.touches[1];
-    var cx = (t1.clientX + t2.clientX) / 2;
-    var cy = (t1.clientY + t2.clientY) / 2;
+    var pcx = (t1.clientX + t2.clientX) / 2;
+    var pcy = (t1.clientY + t2.clientY) / 2;
     var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
     var factor = dist / pinchDist0;
-    var newScale = Math.max(6, Math.min(40, pinchScale0 * factor));
-    var wx = (cx + cam.x) / cam.scale;
-    var wy = (cy + cam.y) / cam.scale;
+    var newScale = Math.max(10, Math.min(52, pinchScale0 * factor));
+    var wx = pcx + cam.x;
+    var wy = pcy + cam.y;
     cam.scale = newScale;
-    cam.x = wx * cam.scale - cx;
-    cam.y = wy * cam.scale - cy;
+    cam.x = wx - pcx;
+    cam.y = wy - pcy;
     clampCamera();
     render();
   }
@@ -921,14 +2189,10 @@ function onTouchEnd(e) {
   e.preventDefault();
   if (!didDrag && e.changedTouches.length === 1 && e.touches.length === 0) {
     var t = e.changedTouches[0];
-    var now = Date.now();
-    if (now - lastTouchEnd < 300) {
-      // double-tap zoom
-      zoomAt(t.clientX, t.clientY, 1.5);
-    } else {
-      onCanvasTap(t.clientX, t.clientY);
-    }
-    lastTouchEnd = now;
+    var rect = canvas.getBoundingClientRect();
+    var cx = t.clientX - rect.left;
+    var cy = t.clientY - rect.top;
+    onCanvasTap(cx, cy);
   }
   if (e.touches.length === 0) {
     dragStart = null;
@@ -937,89 +2201,160 @@ function onTouchEnd(e) {
   }
 }
 
-// ── Click/Tap logic ────────────────────────────────────────────────────────
 function onCanvasClick(e) {
-  if (didDrag) return;
+  if (didDrag) { didDrag = false; return; }
   onCanvasTap(e.offsetX, e.offsetY);
 }
 
+// ── Click/Tap ──────────────────────────────────────────────────────────────
 function onCanvasTap(sx, sy) {
   if (!gameState || gameState.phase !== 'playing') return;
 
-  var wpos = screenToWorld(sx, sy);
-  var tx = Math.floor(wpos.x);
-  var ty = Math.floor(wpos.y);
-  if (tx < 0 || tx >= MAP_W || ty < 0 || ty >= MAP_H) return;
-
-  var tile = gameState.tiles[ty] && gameState.tiles[ty][tx];
-  if (!tile || tile.type === 'fog') return;
-
-  // Find unit at this tile
-  var unitAtTile = null;
-  for (var i = gameState.units.length - 1; i >= 0; i--) {
-    var u = gameState.units[i];
-    if (u.x === tx && u.y === ty) { unitAtTile = u; break; }
-  }
-
-  if (selectedUnit) {
-    // Check if tapping on selected unit — deselect
-    if (unitAtTile && unitAtTile.id === selectedUnit.id) {
-      clearSelection();
-      render();
-      updateHUD();
-      return;
+  // If unload mode is active, check if tapped hex is a valid unload target
+  if (unloadHexes && unloadTransportId !== null && unloadCargoIndex !== null) {
+    var uh2 = screenToHex(sx, sy);
+    for (var uhi = 0; uhi < unloadHexes.length; uhi++) {
+      if (unloadHexes[uhi].x === uh2.col && unloadHexes[uhi].y === uh2.row) {
+        socket.emit('unloadUnit', {
+          roomCode: myRoom,
+          transportId: unloadTransportId,
+          cargoIndex: unloadCargoIndex,
+          toX: uh2.col,
+          toY: uh2.row
+        });
+        clearUnloadMode();
+        render();
+        return;
+      }
     }
-
-    // If tapping own unit, switch selection
-    if (unitAtTile && unitAtTile.owner === myPlayerNum) {
-      selectedUnit = unitAtTile;
-      selectedCityPos = null;
-      render();
-      updateHUD();
-      return;
-    }
-
-    // Otherwise move selected unit to tapped tile
-    var su = selectedUnit;
-    if (su.owner !== myPlayerNum) { clearSelection(); render(); updateHUD(); return; }
-    if (su.movesLeft <= 0) { showToast('Unit has no moves left'); return; }
-
-    var dist = Math.max(Math.abs(tx - su.x), Math.abs(ty - su.y));
-    if (dist > su.movesLeft) { showToast('Too far! Moves left: ' + su.movesLeft); return; }
-
-    if (!canUnitMoveTo(su, tile)) { showToast('Unit can\'t move there'); return; }
-
-    socket.emit('moveUnit', { roomCode: myRoom, unitId: su.id, toX: tx, toY: ty });
-    // Optimistic clear
-    clearSelection();
+    // Tapped somewhere else — cancel unload mode
+    clearUnloadMode();
+    updateSidebar();
+    render();
     return;
   }
 
-  // Nothing selected — select a unit or city
-  if (unitAtTile && unitAtTile.owner === myPlayerNum) {
-    selectedUnit = unitAtTile;
+  hideUnitPicker();
+  hideUnloadPicker();
+  hideBoardPrompt();
+
+  var h = screenToHex(sx, sy);
+  var tx = h.col, ty = h.row;
+  if (tx < 0 || tx >= MAP_W || ty < 0 || ty >= MAP_H) return;
+
+  var tile = gameState.tiles[ty] && gameState.tiles[ty][tx];
+  // Allow tapping fog tiles when a unit is selected (move into unexplored territory)
+  if (!tile) return;
+  if (tile.type === 'void') return; // void tiles are never interactive
+  if (tile.type === 'fog' && !selectedUnit) return; // can't select from fog, but CAN move into it
+
+  var unitsAtTile = gameState.units.filter(function(u) { return u.x === tx && u.y === ty; });
+  var myUnitsAtTile = unitsAtTile.filter(function(u) { return u.owner === myPlayerNum; });
+
+  if (selectedUnit) {
+    var su = selectedUnit;
+
+    // Tapping the selected unit itself = deselect (toggle)
+    if (su.x === tx && su.y === ty && myUnitsAtTile.some(function(u) { return u.id === su.id; })) {
+      clearSelection();
+      render(); updateHUD(); return;
+    }
+
+    // Always try to MOVE first - even if there are friendly units on the destination
+    if (su.owner === myPlayerNum && su.movesLeft > 0 && canUnitMoveTo(su, tile)) {
+      var dist = hexDistance(su.x, su.y, tx, ty);
+      if (dist <= su.movesLeft) {
+        socket.emit('moveUnit', { roomCode: myRoom, unitId: su.id, toX: tx, toY: ty });
+        clearSelection();
+        return;
+      }
+      // Too far - fall through to show toast only if no other action
+      showToast('Too far! Moves left: ' + su.movesLeft);
+      return;
+    }
+
+    // Can't move there (wrong terrain/no moves) - if tapping own unit, switch selection
+    if (myUnitsAtTile.length > 0) {
+      if (myUnitsAtTile.length === 1) {
+        selectedUnit = myUnitsAtTile[0];
+        selectedCityPos = null;
+        render(); updateHUD(); return;
+      } else {
+        showUnitPicker(myUnitsAtTile, sx, sy);
+        return;
+      }
+    }
+
+    // Tapping empty invalid tile - deselect
+    clearSelection();
+    render(); updateHUD(); return;
+  }
+
+  // Nothing selected - select
+  if (myUnitsAtTile.length === 1) {
+    selectedUnit = myUnitsAtTile[0];
     selectedCityPos = null;
-    render();
-    updateHUD();
+    render(); updateHUD(); return;
+  }
+  if (myUnitsAtTile.length > 1) {
+    showUnitPicker(myUnitsAtTile, sx, sy);
     return;
   }
 
   if (tile.type === 'city' && tile.city && tile.city.owner === myPlayerNum) {
     selectedCityPos = { x: tx, y: ty };
     selectedUnit = null;
-    render();
-    updateHUD();
-    return;
+    render(); updateHUD(); return;
   }
 
   clearSelection();
-  render();
-  updateHUD();
+  render(); updateHUD();
+}
+
+// ── Unit Picker Popup ──────────────────────────────────────────────────────
+function showUnitPicker(units, sx, sy) {
+  var picker = document.getElementById('unit-picker');
+  var list = document.getElementById('picker-list');
+  list.innerHTML = '';
+
+  units.forEach(function(u) {
+    var item = document.createElement('div');
+    item.className = 'picker-unit';
+    item.innerHTML = '<span class="pu-sym">' + (u.symbol || '?') + '</span>' +
+      '<span class="pu-info"><span class="pu-name">' + getUnitDisplayName(u.type) + '</span>' +
+      '<span class="pu-moves">Moves: ' + u.movesLeft + (u.fuel !== null ? ' Fuel:' + u.fuel : '') + '</span></span>';
+    item.onclick = (function(unit) {
+      return function() {
+        selectedUnit = unit;
+        selectedCityPos = null;
+        hideUnitPicker();
+        render();
+        updateHUD();
+      };
+    })(u);
+    list.appendChild(item);
+  });
+
+  var pw = 160, ph = units.length * 52 + 32;
+  var px = Math.min(sx, window.innerWidth - pw - 10);
+  var py = Math.min(sy, window.innerHeight - ph - 10);
+  picker.style.left = px + 'px';
+  picker.style.top = py + 'px';
+  picker.style.display = 'flex';
+
+  setTimeout(function() {
+    document.addEventListener('click', hideUnitPicker, { once: true });
+  }, 10);
+}
+
+function hideUnitPicker() {
+  document.getElementById('unit-picker').style.display = 'none';
 }
 
 function clearSelection() {
   selectedUnit = null;
   selectedCityPos = null;
+  clearUnloadMode();
 }
 
 // ── Game actions ───────────────────────────────────────────────────────────
@@ -1027,12 +2362,7 @@ function setProduction() {
   if (!selectedCityPos) return;
   var unitType = document.getElementById('prod-select').value;
   if (!unitType) return;
-  socket.emit('setProduction', {
-    roomCode: myRoom,
-    cityX: selectedCityPos.x,
-    cityY: selectedCityPos.y,
-    unitType: unitType,
-  });
+  socket.emit('setProduction', { roomCode: myRoom, cityX: selectedCityPos.x, cityY: selectedCityPos.y, unitType: unitType });
 }
 
 function endTurn() {
@@ -1049,16 +2379,14 @@ function showToast(msg) {
   toastTimeout = setTimeout(function() { el.style.display = 'none'; }, 2500);
 }
 
-// Allow pressing Enter in join code field
+// ── Input helpers ─────────────────────────────────────────────────────────
 document.getElementById('join-code').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') joinGame();
 });
 document.getElementById('player-name').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') createGame();
 });
-
-// Auto-uppercase join code
-document.getElementById('join-code').addEventListener('input', function(e) {
+document.getElementById('join-code').addEventListener('input', function() {
   this.value = this.value.toUpperCase();
 });
 </script>

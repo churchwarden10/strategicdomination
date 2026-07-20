@@ -1,0 +1,68 @@
+STRATEGIC DOMINATION — Level 3 AI Self-Play: Bugs & Suggestions
+================================================================
+Generated from selfplay.js simulation (multiple runs, 30–60 turns each)
+
+BUGS FOUND
+----------
+• Bug 1 — Army attack too low: attack=1 means 16.7% hit rate. Armies miss ~83% of
+  attacks. Verified by Turn 31-33 of 60-turn run: 6 army attacks on a transport = 4
+  misses, 2 hits. Ground combat feels ineffectual.
+  FIX: Increase army attack from 1 to 2 in UNIT_COMBAT.
+
+• Bug 2 — Transport-only production loop: Two coastal cities both check
+  "do I have a transport?" simultaneously before any transport spawns, so both set
+  production=transport. Result: one run produced 4 transports and 0 armies/tanks.
+  FIX: When setting production, also check if any other friendly city is currently
+  building a transport: friendlyCities.some(fc => fc.city.production === 'transport')
+
+• Bug 3 — No-city survival (very long endgame): checkWin requires both 0 cities
+  AND 0 units. A player with 0 cities but 1 unit survived for 20+ turns without
+  producing anything. Technically correct per rules, but creates tedious endgames.
+  FIX OPTION: Add a "city timeout" — if a player has had 0 cities for 10 consecutive
+  turns, declare the other player the winner.
+
+• Bug 4 — BFS skips enemy-adjacent tiles (path planning blind spot): aiBFS stops
+  expansion through enemy-occupied tiles. AI units attacking a defended city are
+  unable to plan multi-step paths around defenders, causing repetitive attack attempts
+  on the same tile.
+  FIX: The BFS should allow routing adjacent to (but not through) enemy tiles so
+  units can flank.
+
+• Bug 5 — Bombers crash from fuel (fuel-aware routing missing): Level 3 added bomber
+  avoidance of fighter-covered hexes but not return-to-base when fuel is low. 3 air
+  unit crashes observed in 30-turn run.
+  FIX: Add fuel threshold check — if unit.fuel <= 3, override target to nearest
+  friendly city or carrier.
+
+• Bug 6 — Retreat logic never triggers (0 retreats in all runs): Conditions require
+  "0 friendlies within 2 hexes AND ≥2 enemies within 2 hexes". This combination
+  almost never occurs in practice due to unit clustering.
+  FIX: Loosen to "0 friendlies within 1 hex AND ≥1 enemy within 2 hexes".
+
+GAME IMPROVEMENT SUGGESTIONS
+-----------------------------
+• Balance: Increase army attack from 1→2. At 1/6 hit rate, infantry are basically
+  useless in direct assaults.
+
+• Balance: Max starting distance should be ~18 hexes. The 40×40 map places players
+  25-31 hexes apart frequently. Army (move=1) takes the whole 30 turns just to walk
+  there — game ends before any combat.
+
+• Balance: Add 60-turn default (or scoring at turn limit). 30 turns is too short on
+  a 40×40 map. P1 won cleanly at turn 53 in the 60-turn run.
+
+• Balance: Battleship build time 14 is too long. Game often decided before it arrives.
+  Consider reducing to 10 or adding a cheaper mid-tier naval unit.
+
+• AI: Fix production loop for coastal cities (see Bug 2 above).
+
+• AI: Add fuel-aware return-to-base for bombers/fighters (see Bug 5 above).
+
+• AI: Loosen retreat threshold (see Bug 6 above).
+
+• Design: Add AI fog of war — currently AI has perfect information. Limiting
+  visibility would make games more dynamic and human-like.
+
+• Design: Add a scoring mode — if neither player wins by turn limit, player with
+  more cities wins. Currently turn-limit games always show "STALEMATE" even when
+  one player is clearly winning 7:2 in cities.
