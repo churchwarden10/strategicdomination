@@ -1232,10 +1232,10 @@ function drawHex(ctx, cx, cy, size, tile, col, row, now) {
   // ── FOG TILES ────────────────────────────────────────────────────────────
   if (tile.type === 'fog') {
     // Simple flat dark fill — no gradient, no stars, fast
-    ctx.fillStyle = '#0e1a0e';
+    ctx.fillStyle = '#1a1a1a';
     ctx.fill();
     // Subtle hex border to keep grid readable
-    ctx.strokeStyle = '#1a2e1a';
+    ctx.strokeStyle = '#2a2a2a';
     ctx.lineWidth = 0.5;
     ctx.stroke();
     return;
