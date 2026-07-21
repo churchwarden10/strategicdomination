@@ -1354,7 +1354,23 @@ io.on('connection', socket => {
     const code = roomCode.toUpperCase().trim();
     const state = games.get(code);
     if (!state) return socket.emit('error', 'Room not found');
-    if (state.vsComputer) return socket.emit('error', 'That is a solo game');
+
+    // Solo games: treat joinGame as a rejoin for player 1
+    if (state.vsComputer) {
+      const p1Entry = Object.entries(state.players).find(([, p]) => p.id === 1);
+      if (p1Entry) {
+        const [oldSid, playerData] = p1Entry;
+        delete state.players[oldSid];
+        state.players[socket.id] = playerData;
+      } else {
+        state.players[socket.id] = { id: 1, name: name || 'Player 1' };
+      }
+      state.playerSockets[1] = socket;
+      socket.join(code);
+      socket.emit('gameJoined', { roomCode: code, playerNum: 1 });
+      socket.emit('stateUpdate', buildClientState(state, 1));
+      return;
+    }
 
     const humanPlayers = Object.entries(state.players).filter(([k]) => k !== 'computer');
 

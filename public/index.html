@@ -737,43 +737,65 @@ function loadActiveGames() {
       var list = document.getElementById('active-games-list');
       if (!list) return;
       list.innerHTML = '';
-      if (!games || games.length === 0) { section.style.display = 'none'; return; }
+
+      // Only show games this player has a saved session for (their own games)
+      var myGames = (games || []).filter(function(g) {
+        return getPlayerSession(g.roomCode) !== null;
+      });
+
+      // Also show open multiplayer slots for games we haven't joined yet
+      var joinableGames = (games || []).filter(function(g) {
+        return !g.vsComputer && g.players.length < 2 && getPlayerSession(g.roomCode) === null;
+      });
+
+      if (myGames.length === 0 && joinableGames.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
       section.style.display = 'block';
-      games.forEach(function(g) {
-        var session = getPlayerSession(g.roomCode);
-        var playerNames = g.players.map(function(p) { return 'P' + p.id + ': ' + p.name; }).join(' vs ');
+
+      // My games first — big easy rejoin tap
+      myGames.forEach(function(g) {
+        var sess = getPlayerSession(g.roomCode);
         var sizeLabel = g.mapSize === 'small' ? 'Small' : g.mapSize === 'medium' ? 'Medium' : 'Large';
-        var meta = (g.vsComputer ? 'vs CPU' : playerNames) + ' • Turn ' + g.turn + ' • ' + sizeLabel + ' map';
-        var canRejoin = session !== null;
-        var canJoinAsP2 = !g.vsComputer && g.players.length < 2;
+        var opponent = g.vsComputer ? 'vs CPU' : (g.players.filter(function(p){ return p.id !== sess.playerNum; }).map(function(p){ return p.name; })[0] || 'Waiting...');
+        var meta = opponent + ' • Turn ' + g.turn + ' • ' + sizeLabel;
         var card = document.createElement('div');
         card.className = 'active-game-card';
-        card.innerHTML = '<div class="active-game-info">' +
-          '<div class="active-game-code">' + g.roomCode + '</div>' +
-          '<div class="active-game-meta">' + meta + '</div>' +
-          '</div>';
-        if (canRejoin) {
-          var btn = document.createElement('button');
-          btn.className = 'active-game-btn rejoin';
-          btn.textContent = '↩ Rejoin';
-          btn.onclick = (function(game, sess) {
-            return function() { rejoinActiveGame(game.roomCode, sess.name, sess.playerNum); };
-          })(g, session);
-          card.appendChild(btn);
-        } else if (canJoinAsP2) {
-          var btn2 = document.createElement('button');
-          btn2.className = 'active-game-btn join';
-          btn2.textContent = 'Join';
-          btn2.onclick = (function(game) {
-            return function() {
-              var nameInput = document.getElementById('player-name');
-              var n = (nameInput && nameInput.value.trim()) || 'Player 2';
-              document.getElementById('join-code').value = game.roomCode;
-              joinGame();
-            };
-          })(g);
-          card.appendChild(btn2);
-        }
+        // Make the whole card tappable as a rejoin button
+        card.style.cursor = 'pointer';
+        card.innerHTML =
+          '<div class="active-game-info">' +
+            '<div class="active-game-code" style="font-size:0.85rem;color:var(--muted);letter-spacing:1px">' + (sess.playerNum === 1 ? '🔵' : '🔴') + ' ' + (sess.name || 'Me') + '</div>' +
+            '<div class="active-game-meta">' + meta + '</div>' +
+          '</div>' +
+          '<button class="active-game-btn rejoin">▶ Resume</button>';
+        card.onclick = (function(game, session) {
+          return function() { rejoinActiveGame(game.roomCode, session.name, session.playerNum); };
+        })(g, sess);
+        list.appendChild(card);
+      });
+
+      // Open multiplayer slots — games someone else started, waiting for P2
+      joinableGames.forEach(function(g) {
+        var sizeLabel = g.mapSize === 'small' ? 'Small' : g.mapSize === 'medium' ? 'Medium' : 'Large';
+        var hostName = g.players[0] ? g.players[0].name : '?';
+        var card = document.createElement('div');
+        card.className = 'active-game-card';
+        card.innerHTML =
+          '<div class="active-game-info">' +
+            '<div class="active-game-code" style="font-size:0.85rem;color:var(--muted)">🟡 ' + hostName + '</div>' +
+            '<div class="active-game-meta">Open • Turn ' + g.turn + ' • ' + sizeLabel + '</div>' +
+          '</div>' +
+          '<button class="active-game-btn join">Join</button>';
+        card.querySelector('button').onclick = (function(game) {
+          return function() {
+            var nameInput = document.getElementById('player-name');
+            var n = (nameInput && nameInput.value.trim()) || 'Player 2';
+            document.getElementById('join-code').value = game.roomCode;
+            joinGame();
+          };
+        })(g);
         list.appendChild(card);
       });
     })
