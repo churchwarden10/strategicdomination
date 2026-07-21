@@ -23,7 +23,7 @@ app.get('/api/games', (req, res) => {
       turn: state.turn,
       vsComputer: state.vsComputer || false,
       players,
-      mapSize: state.mapW <= 20 ? 'small' : 'large',
+      mapSize: state.mapW <= 20 ? 'small' : state.mapW <= 30 ? 'medium' : 'large',
     });
   }
   res.json(active);
@@ -273,9 +273,8 @@ let uidCounter = 0;
 function newUid() { return ++uidCounter; }
 
 function createGameState(roomCode, mapSize) {
-  const isSmall = mapSize === 'small';
-  const mapW = isSmall ? 20 : 40;
-  const mapH = isSmall ? 20 : 40;
+  const mapW = mapSize === 'small' ? 20 : mapSize === 'medium' ? 30 : 40;
+  const mapH = mapSize === 'small' ? 20 : mapSize === 'medium' ? 30 : 40;
 
   const mapData = generateMap(mapW, mapH);
   const { tiles, p1City, p2City } = mapData;
