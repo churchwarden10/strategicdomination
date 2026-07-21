@@ -638,13 +638,17 @@
   <div id="prod-popup-title">🏙️ City Production</div>
 </div>
 
-<button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;bottom:80px;left:10px;z-index:200;padding:6px 14px;font-size:0.78rem;border-radius:8px;border:1px solid var(--border);background:rgba(22,27,34,0.95);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️ Log</button>
-<div id="battle-log-wrap" style="position:fixed;bottom:120px;left:10px;right:10px;z-index:190;background:rgba(22,27,34,0.96);border:1px solid var(--border);border-radius:10px;padding:4px 8px;display:none;flex-direction:column;gap:0;">
+<!-- Unit details bar — bottom of screen, shows selected unit stats -->
+<div id="unit-details-bar" style="position:fixed;bottom:0;left:0;right:0;z-index:180;background:rgba(13,17,23,0.97);border-top:1px solid var(--border);padding:5px 12px;font-size:0.72rem;color:var(--fg);display:none;min-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+
+<!-- Battle log — button at bottom-left, panel pops up at top -->
+<button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;bottom:44px;left:10px;z-index:200;padding:6px 14px;font-size:0.78rem;border-radius:8px;border:1px solid var(--border);background:rgba(22,27,34,0.95);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️ Log</button>
+<div id="battle-log-wrap" style="position:fixed;top:54px;left:10px;right:10px;z-index:190;background:rgba(22,27,34,0.96);border:1px solid var(--border);border-radius:10px;padding:4px 8px;display:none;flex-direction:column;gap:0;">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
     <span style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">⚔️ Battle Log</span>
     <button onclick="toggleBattleLog()" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;padding:0 2px;">✕</button>
   </div>
-  <div id="battle-log-entries" style="max-height:120px;overflow-y:auto;"></div>
+  <div id="battle-log-entries" style="max-height:160px;overflow-y:auto;"></div>
 </div>
 <button id="end-turn-btn" onclick="endTurn()">End Turn</button>
 
@@ -2516,16 +2520,16 @@ function updateHUD() {
     if (u) {
       selectedUnit = u;
       var infoParts = [(u.symbol || '') + ' ' + getUnitDisplayName(u.type)];
-      // HP bar
       if (u.hp != null && u.maxHp != null) {
         var hpFrac = u.hp / u.maxHp;
-        var hpColor = hpFrac > 0.6 ? '#3fb950' : hpFrac > 0.3 ? '#f0a030' : '#f85149';
+        var hpCol = hpFrac > 0.6 ? '#3fb950' : hpFrac > 0.3 ? '#f0a030' : '#f85149';
         infoParts.push('♥ ' + u.hp + '/' + u.maxHp + ' HP');
       }
-      infoParts.push('👣 ' + u.movesLeft + '/' + (UNIT_MOVE_MAX[u.type] || u.movesLeft));
-      if (u.fuel !== null) infoParts.push('⛽ ' + u.fuel + ' fuel');
+      infoParts.push('👣 ' + u.movesLeft + '/' + (UNIT_MOVE_MAX[u.type] || u.movesLeft) + ' moves');
+      if (u.fuel !== null) infoParts.push('⛽ ' + u.fuel + '/' + (u.type === 'fighter' ? 10 : 15) + ' fuel');
       if (u.cargo && u.cargo.length > 0) infoParts.push('Cargo: ' + u.cargo.length);
-      var _ud = document.getElementById('unit-details'); if (_ud) _ud.textContent = infoParts.join('  |  ');
+      var _udb = document.getElementById('unit-details-bar');
+      if (_udb) { _udb.textContent = infoParts.join('   ·   '); _udb.style.display = 'block'; }
 
       if (u.type === 'transport' && u.owner === myPlayerNum) {
         updateTransportUI(u, state);
@@ -3140,6 +3144,8 @@ function hideUnitPicker() {
 }
 
 function clearSelection() {
+  var _udb = document.getElementById('unit-details-bar');
+  if (_udb) _udb.style.display = 'none';
   selectedUnit = null;
   selectedCityPos = null;
   selectedCityScreenPos = null;

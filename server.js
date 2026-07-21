@@ -1256,6 +1256,16 @@ function doMove(state, unit, toX, toY) {
     if (!stillExists) return; // unit destroyed
   }
 
+  // Air units cannot land on enemy cities — they can attack units there but must stay airborne
+  const isEnemyCity = destTile.type === 'city' && destTile.city && destTile.city.owner !== unit.owner && destTile.city.owner !== 0;
+  if (def.domain === 'air' && isEnemyCity) {
+    // Unit attacked any enemy units here (already resolved above) but cannot occupy the tile
+    // Consume a move but don't actually land
+    unit.movesLeft = Math.max(0, unit.movesLeft - 1);
+    if (unit.fuel !== null) unit.fuel = Math.max(0, unit.fuel - 1);
+    return;
+  }
+
   unit.x = toX;
   unit.y = toY;
   unit.movesLeft = Math.max(0, unit.movesLeft - 1);
@@ -1685,8 +1695,11 @@ io.on('connection', socket => {
       return socket.emit('moveError', 'Only coastal cities can build naval units');
     }
 
-    tile.city.production = unitType;
-    tile.city.progress = 0;
+    // Only reset progress if actually changing production type
+    if (tile.city.production !== unitType) {
+      tile.city.production = unitType;
+      tile.city.progress = 0;
+    }
     broadcastState(state);
   });
 
