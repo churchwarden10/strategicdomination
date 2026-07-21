@@ -2856,18 +2856,23 @@ function showProdPopup(ct, cityPos, screenPos) {
     popup.appendChild(div);
   });
   popup.style.display = 'flex';
+  // Position so first option (~30px from top of popup) lines up with tap point
   var pw = 210;
   var vw = window.innerWidth, vh = window.innerHeight;
   var sx = screenPos ? screenPos.x : vw / 2;
   var sy = screenPos ? screenPos.y : vh / 2;
-  var left = Math.min(sx + 10, vw - pw - 8);
+  // Prefer right of tap; flip left if not enough room
+  var left = (sx + 10 + pw < vw - 8) ? sx + 10 : sx - pw - 10;
+  left = Math.max(8, left);
+  // Align so first option (title ~24px + first row ~30px = ~42px offset) is at tap y
   var ph = popup.scrollHeight || 300;
-  var top = sy - ph / 2;
+  var top = sy - 42;
   top = Math.max(60, Math.min(top, vh - ph - 8));
   popup.style.left = left + 'px';
   popup.style.top = top + 'px';
+  // Dismiss on outside tap — use touchstart too for mobile
   setTimeout(function() {
-    document.addEventListener('click', hideProdPopupOutside, { once: true });
+    document.addEventListener('pointerdown', hideProdPopupOutside, { once: true });
   }, 50);
 }
 
