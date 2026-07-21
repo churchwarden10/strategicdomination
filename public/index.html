@@ -611,14 +611,14 @@
 
 <!-- Fixed End Turn button — always bottom-right, above everything -->
 <!-- Battle log overlay — shown/hidden via toggle button -->
-<div id="battle-log-wrap" style="position:fixed;top:56px;left:10px;right:10px;z-index:190;background:rgba(22,27,34,0.96);border:1px solid var(--border);border-radius:10px;padding:4px 8px 4px 8px;display:none;flex-direction:column;gap:0;">
+<button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;top:56px;left:10px;z-index:200;padding:5px 12px;font-size:0.75rem;border-radius:8px;border:1px solid var(--border);background:rgba(22,27,34,0.9);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️</button>
+<div id="battle-log-wrap" style="position:fixed;top:95px;left:10px;right:10px;z-index:190;background:rgba(22,27,34,0.96);border:1px solid var(--border);border-radius:10px;padding:4px 8px;display:none;flex-direction:column;gap:0;">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
     <span style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">⚔️ Battle Log</span>
     <button onclick="toggleBattleLog()" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;padding:0 2px;">✕</button>
   </div>
   <div id="battle-log-entries" style="max-height:90px;overflow-y:auto;"></div>
 </div>
-<button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;top:56px;left:10px;z-index:200;padding:5px 12px;font-size:0.75rem;border-radius:8px;border:1px solid var(--border);background:rgba(22,27,34,0.9);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️</button>
 <button id="end-turn-btn" onclick="endTurn()">End Turn</button>
 
 <!-- End Screen -->
