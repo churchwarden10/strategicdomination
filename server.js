@@ -657,20 +657,15 @@ function runAILevel3(state) {
   const mapH = state.mapH || MAP_H;
   if (state.phase !== 'playing') return;
 
-  // ── Fog of war: AI only knows what player 2 can currently see or has explored ──
-  const aiVisible  = getVisibleTiles(state, 2); // tiles currently in sight
+  // ── Fog of war ──────────────────────────────────────────────────────────
+  const aiVisible  = getVisibleTiles(state, 2);
   const aiExplored = state.exploredTiles ? state.exploredTiles[2] : null;
-
-  function aiCanSee(x, y) {
-    return aiVisible.has(y * mapW + x);
-  }
-
-  // AI only sees enemy units in currently visible tiles
-  const p1Units = state.units.filter(u => u.owner === 1 && aiCanSee(u.x, u.y));
+  function aiCanSee(x, y) { return aiVisible.has(y * mapW + x); }
 
   const aiUnits = state.units.filter(u => u.owner === 2);
+  const p1Units = state.units.filter(u => u.owner === 1 && aiCanSee(u.x, u.y));
 
-  // ── City lists (fog-filtered: only cities AI has explored) ─────────────
+  // ── City lists (fog-filtered) ───────────────────────────────────────────
   const neutralCities  = [];
   const friendlyCities = [];
   const enemyCities    = [];
@@ -679,104 +674,109 @@ function runAILevel3(state) {
       const tile = state.tiles[y][x];
       if (tile.type !== 'city' || !tile.city) continue;
       const key = y * mapW + x;
-      // Only include cities the AI has seen (currently visible or previously explored)
       const known = aiVisible.has(key) || (aiExplored && aiExplored.has(key));
       if (!known) continue;
       const pos = { x, y, city: tile.city, tile };
-      // For explored-but-not-currently-visible tiles, use last known ownership
-      // (which is what's stored in state.tiles — same as a human would remember)
       if (!tile.city.owner || tile.city.owner === 0) neutralCities.push(pos);
       else if (tile.city.owner === 2) friendlyCities.push(pos);
       else enemyCities.push(pos);
     }
   }
 
-  // ── Production ──────────────────────────────────────────────────────────
-  // Smart production: count what we have and fill gaps
+  // ── Situation awareness ─────────────────────────────────────────────────
   const aiCounts = {};
   for (const u of aiUnits) aiCounts[u.type] = (aiCounts[u.type] || 0) + 1;
-  const totalAI = aiUnits.length || 1;
 
+  // Are we winning city count?
+  const allKnownCities = neutralCities.length + friendlyCities.length + enemyCities.length;
+  const aiCityAdvantage = friendlyCities.length > (allKnownCities / 2);
+
+  // Is enemy reachable by land from any of our units?
+  const landAI = aiUnits.filter(u => UNIT_DEFS[u.type]?.domain === 'land');
+  const enemyReachableByLand = enemyCities.length > 0 && landAI.some(u =>
+    enemyCities.some(ec => onSameLandmass(state, u.x, u.y, ec.x, ec.y))
+  );
+  const needNaval = enemyCities.length > 0 && !enemyReachableByLand && landAI.length > 0;
+
+  // ── Production ──────────────────────────────────────────────────────────
   for (const cp of friendlyCities) {
     const tile = cp.tile;
-    if (tile.city.production) continue; // already queued
+    if (tile.city.production) continue;
     const isCoastal = tile.city.coastal;
     const enemyHasAir = p1Units.some(u => u.type === 'fighter' || u.type === 'bomber');
     const needFighters = enemyHasAir && (aiCounts['fighter'] || 0) < 2;
-    const needNaval = isCoastal && (aiCounts['destroyer'] || 0) < 1;
-    const tankRatio = (aiCounts['tank'] || 0) / totalAI;
-    const infantryRatio = (aiCounts['army'] || 0) / totalAI;
+    const hasTransport = (aiCounts['transport'] || 0) > 0;
 
     let prod;
-    if (needFighters) prod = 'fighter';
-    else if (needNaval) prod = 'destroyer';
-    else if (tankRatio < 0.3) prod = 'tank';
-    else if (infantryRatio < 0.4) prod = 'army';
-    else if (isCoastal && (aiCounts['battleship'] || 0) < 1) prod = 'battleship';
-    else prod = Math.random() < 0.6 ? 'tank' : 'army';
+    if (needNaval && isCoastal && !hasTransport) prod = 'transport';
+    else if (needFighters && isCoastal) prod = 'fighter';
+    else if ((aiCounts['tank'] || 0) < 2) prod = 'tank';
+    else if (isCoastal && needNaval && (aiCounts['destroyer'] || 0) < 1) prod = 'destroyer';
+    else prod = Math.random() < 0.5 ? 'tank' : 'army';
 
     tile.city.production = prod;
     tile.city.progress = 0;
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
+  function hpRatio(unit) { return unit.maxHp ? unit.hp / unit.maxHp : 1; }
+
   function nearestSafeBase(unit) {
     let best = null, bestD = Infinity;
     for (const fc of friendlyCities) {
       const d = hexDistance(unit.x, unit.y, fc.x, fc.y);
       if (d < bestD) { bestD = d; best = fc; }
     }
-    for (const carrier of state.units) {
-      if (carrier.owner !== 2 || carrier.type !== 'carrier') continue;
-      const d = hexDistance(unit.x, unit.y, carrier.x, carrier.y);
-      if (d < bestD) { bestD = d; best = { x: carrier.x, y: carrier.y }; }
+    for (const c of state.units) {
+      if (c.owner !== 2 || c.type !== 'carrier') continue;
+      const d = hexDistance(unit.x, unit.y, c.x, c.y);
+      if (d < bestD) { bestD = d; best = { x: c.x, y: c.y }; }
     }
     return best;
   }
 
-  function hpRatio(unit) {
-    if (!unit.maxHp) return 1;
-    return unit.hp / unit.maxHp;
+  // Score an attack opportunity
+  function attackScore(atk, def) {
+    let s = 0;
+    const defHp = hpRatio(def);
+    s += (1 - defHp) * 80;  // huge bonus for near-dead enemies
+    if (defHp < 0.25) s += 100; // almost dead - kill it
+    const val = { battleship:40, carrier:40, bomber:35, fighter:30, tank:25, destroyer:20, army:15, transport:15, submarine:15 };
+    s += val[def.type] || 10;
+    if (hpRatio(atk) < 0.35) s -= 20; // attacker is hurt too
+    return s;
   }
 
-  // Score a potential attack on a defender by this attacker (higher = better)
-  function attackScore(attacker, defender) {
-    let score = 0;
-    const defHpRatio = hpRatio(defender);
-    // Big bonus for killing (low HP defender)
-    score += (1 - defHpRatio) * 60;
-    // Bonus for valuable targets
-    const valueMap = { battleship: 40, carrier: 40, bomber: 35, fighter: 30, tank: 20, destroyer: 20, army: 10, transport: 15, submarine: 15 };
-    score += valueMap[defender.type] || 10;
-    // Prefer weakened defenders
-    if (defHpRatio < 0.3) score += 50;
-    else if (defHpRatio < 0.6) score += 20;
-    // Penalty if attacker is low HP (risky attack)
-    if (hpRatio(attacker) < 0.4) score -= 15;
-    return score;
+  // Best city target for a unit (nearest uncaptured, weighted by value)
+  function bestCityTarget(unit, domain) {
+    let best = null, bestScore = -Infinity;
+    // Enemy cities are top priority
+    for (const ec of enemyCities) {
+      if (domain !== 'land' && domain !== 'air') continue;
+      const d = hexDistance(unit.x, unit.y, ec.x, ec.y);
+      const sc = 200 - d * 2;
+      if (sc > bestScore) { bestScore = sc; best = ec; }
+    }
+    // Then neutral cities
+    for (const nc of neutralCities) {
+      if (domain !== 'land') continue;
+      const d = hexDistance(unit.x, unit.y, nc.x, nc.y);
+      const sc = 100 - d;
+      if (sc > bestScore) { bestScore = sc; best = nc; }
+    }
+    return best;
   }
 
-  // Score a move toward a target (city capture, advance)
-  function moveScore(unit, target, type) {
-    const d = hexDistance(unit.x, unit.y, target.x, target.y);
-    if (type === 'capture_enemy')  return 80 - d;
-    if (type === 'capture_neutral') return 60 - d;
-    if (type === 'advance_enemy')  return 30 - d * 0.5;
-    if (type === 'retreat')        return 40;
-    return 10;
-  }
-
-  // ── Main AI loop: score every action for every unit ────────────────────
   const movedIds = new Set();
 
-  // Process each unit by priority: pick its best action and execute it
-  // We run multiple passes so that attacking units can be prioritized
+  // Sort units: adjacent-to-enemy first, then capturable units, then rest
   const unitQueue = [...aiUnits].sort((a, b) => {
-    // Prioritize units that are already adjacent to enemies
     const aAdj = state.units.some(u => u.owner === 1 && hexDistance(a.x, a.y, u.x, u.y) === 1);
     const bAdj = state.units.some(u => u.owner === 1 && hexDistance(b.x, b.y, u.x, u.y) === 1);
-    if (aAdj && !bAdj) return -1;
-    if (!aAdj && bAdj) return 1;
+    if (aAdj !== bAdj) return aAdj ? -1 : 1;
+    const aCap = UNIT_DEFS[a.type]?.canCapture;
+    const bCap = UNIT_DEFS[b.type]?.canCapture;
+    if (aCap !== bCap) return aCap ? -1 : 1;
     return 0;
   });
 
@@ -784,161 +784,141 @@ function runAILevel3(state) {
     if (unit.movesLeft <= 0 || movedIds.has(unit.id)) continue;
     const def = UNIT_DEFS[unit.type];
     if (!def) continue;
-
     const domain = def.domain;
-    let bestAction = null;
-    let bestScore = -Infinity;
 
-    // ── Air: return to base if low fuel ──────────────────────────────────
-    if (unit.fuel !== null && unit.fuel <= Math.ceil(def.move * 0.4)) {
+    // ── Return to base if low fuel ────────────────────────────────────────
+    if (unit.fuel !== null && unit.fuel <= Math.ceil(def.move * 0.35)) {
       const base = nearestSafeBase(unit);
       if (base) {
         const step = aiBFS(state, unit.x, unit.y, base.x, base.y, domain);
-        if (step) { bestAction = { type: 'move', step }; bestScore = 1000; }
+        if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); continue; }
       }
     }
 
-    if (bestScore < 900) {
-      // ── Option A: Attack adjacent enemies ──────────────────────────────
-      if (!unit.hasAttacked) {
-        const adjEnemies = p1Units.filter(eu => hexDistance(unit.x, unit.y, eu.x, eu.y) === 1);
-        for (const enemy of adjEnemies) {
-          const sc = attackScore(unit, enemy) + 100; // Adjacent attack = high priority
-          if (sc > bestScore) {
-            bestScore = sc;
-            bestAction = { type: 'attack_adjacent', enemy };
-          }
-        }
+    // ── Retreat badly damaged unit ────────────────────────────────────────
+    if (hpRatio(unit) < 0.3 && domain !== 'air') {
+      const base = nearestSafeBase(unit);
+      if (base && hexDistance(unit.x, unit.y, base.x, base.y) > 1) {
+        const step = aiBFS(state, unit.x, unit.y, base.x, base.y, domain);
+        if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); continue; }
       }
+    }
 
-      // ── Option B: Move into enemy tile (combat via doMove) ─────────────
-      if (unit.movesLeft > 0) {
-        const nbs = hexNeighbors(unit.x, unit.y, mapW, mapH);
-        for (const nb of nbs) {
-          const tile = state.tiles[nb.y][nb.x];
-          if (!tile || !checkMoveDomain(domain, tile.type, tile)) continue;
-          const enemies = state.units.filter(u => u.owner === 1 && u.x === nb.x && u.y === nb.y);
-          if (enemies.length > 0) {
-            const sc = attackScore(unit, enemies[0]) + 80;
-            if (sc > bestScore) {
-              bestScore = sc;
-              bestAction = { type: 'move', step: { x: nb.x, y: nb.y } };
-            }
-          }
-        }
+    let bestAction = null;
+    let bestScore = -Infinity;
+
+    // ── A: Attack adjacent enemy (highest priority) ───────────────────────
+    if (!unit.hasAttacked) {
+      const adjEnemies = p1Units.filter(eu => hexDistance(unit.x, unit.y, eu.x, eu.y) === 1);
+      for (const enemy of adjEnemies) {
+        const sc = attackScore(unit, enemy) + 150;
+        if (sc > bestScore) { bestScore = sc; bestAction = { type: 'attack', enemy }; }
       }
+    }
 
-      // ── Option C: Capture enemy city ───────────────────────────────────
-      if (def.canCapture && unit.movesLeft > 0) {
-        for (const ec of enemyCities) {
-          const sc = moveScore(unit, ec, 'capture_enemy');
-          if (sc > bestScore) {
-            const step = aiBFS(state, unit.x, unit.y, ec.x, ec.y, domain);
-            if (step) { bestScore = sc; bestAction = { type: 'move', step }; }
-          }
-        }
-      }
-
-      // ── Option D: Capture neutral city ─────────────────────────────────
-      if (def.canCapture && unit.movesLeft > 0) {
-        for (const nc of neutralCities) {
-          const sc = moveScore(unit, nc, 'capture_neutral');
-          if (sc > bestScore) {
-            const step = aiBFS(state, unit.x, unit.y, nc.x, nc.y, domain);
-            if (step) { bestScore = sc; bestAction = { type: 'move', step }; }
-          }
-        }
-      }
-
-      // ── Option E: Advance toward lowest-HP enemy unit ──────────────────
-      if (unit.movesLeft > 0) {
-        // Find best enemy target: weight by HP and distance
-        let bestTarget = null, bestTargetSc = -Infinity;
-        for (const eu of p1Units) {
-          // Domain filter: land/sea/air units shouldn't chase wrong domain
-          const euDef = UNIT_DEFS[eu.type];
-          if (!euDef) continue;
-          if (domain === 'land' && euDef.domain === 'sea') continue;
-          if (domain === 'sea'  && euDef.domain === 'land') continue;
-          const d = hexDistance(unit.x, unit.y, eu.x, eu.y);
-          const tsc = (1 - hpRatio(eu)) * 50 + 20 - d * 0.5;
-          if (tsc > bestTargetSc) { bestTargetSc = tsc; bestTarget = eu; }
-        }
-        if (bestTarget) {
-          const step = aiBFS(state, unit.x, unit.y, bestTarget.x, bestTarget.y, domain);
-          if (step) {
-            const sc = moveScore(unit, bestTarget, 'advance_enemy') + bestTargetSc * 0.3;
-            if (sc > bestScore) { bestScore = sc; bestAction = { type: 'move', step }; }
-          }
-        }
-        // Fallback: advance toward nearest enemy city
-        if (!bestAction && enemyCities.length > 0) {
-          let best = null, bestD = Infinity;
-          for (const ec of enemyCities) {
-            const d = hexDistance(unit.x, unit.y, ec.x, ec.y);
-            if (d < bestD) { bestD = d; best = ec; }
-          }
-          if (best) {
-            const step = aiBFS(state, unit.x, unit.y, best.x, best.y, domain);
-            if (step) { bestScore = 5; bestAction = { type: 'move', step }; }
-          }
-        }
-        // Exploration fallback: if no enemy targets known, move toward nearest unexplored tile
-        if (!bestAction && unit.movesLeft > 0) {
-          let bestExploreTile = null, bestExploreDist = Infinity;
-          // Sample candidate unexplored tiles near unit
-          for (let dy = -6; dy <= 6; dy++) {
-            for (let dx = -6; dx <= 6; dx++) {
-              const ex = unit.x + dx, ey = unit.y + dy;
-              if (ex < 0 || ex >= mapW || ey < 0 || ey >= mapH) continue;
-              const ek = ey * mapW + ex;
-              if (aiVisible.has(ek) || (aiExplored && aiExplored.has(ek))) continue;
-              const tile = state.tiles[ey][ex];
-              if (!tile || tile.type === 'void') continue;
-              if (!checkMoveDomain(domain, tile.type, tile)) continue;
-              const d = hexDistance(unit.x, unit.y, ex, ey);
-              if (d < bestExploreDist) { bestExploreDist = d; bestExploreTile = { x: ex, y: ey }; }
-            }
-          }
-          if (bestExploreTile) {
-            const step = aiBFS(state, unit.x, unit.y, bestExploreTile.x, bestExploreTile.y, domain);
-            if (step) { bestScore = 2; bestAction = { type: 'move', step }; }
-          }
-        }
-      }
-
-      // ── Option F: Retreat damaged unit to nearest city ──────────────────
-      if (hpRatio(unit) < 0.35 && unit.movesLeft > 0) {
-        const base = domain === 'land' || domain === 'air' ? nearestSafeBase(unit) : null;
-        if (base) {
-          const step = aiBFS(state, unit.x, unit.y, base.x, base.y, domain);
-          if (step) {
-            const sc = moveScore(unit, base, 'retreat');
-            if (sc > bestScore) { bestScore = sc; bestAction = { type: 'move', step }; }
-          }
+    // ── B: Move into enemy tile ───────────────────────────────────────────
+    if (unit.movesLeft > 0) {
+      const nbs = hexNeighbors(unit.x, unit.y, mapW, mapH);
+      for (const nb of nbs) {
+        const tile = state.tiles[nb.y][nb.x];
+        if (!tile || !checkMoveDomain(domain, tile.type, tile)) continue;
+        const enemies = state.units.filter(u => u.owner === 1 && u.x === nb.x && u.y === nb.y);
+        if (enemies.length > 0) {
+          const sc = attackScore(unit, enemies[0]) + 120;
+          if (sc > bestScore) { bestScore = sc; bestAction = { type: 'move', step: { x: nb.x, y: nb.y } }; }
         }
       }
     }
 
-    // ── Execute best action ────────────────────────────────────────────────
+    // ── C: Capture city ───────────────────────────────────────────────────
+    if (def.canCapture && unit.movesLeft > 0) {
+      const cityTarget = bestCityTarget(unit, domain);
+      if (cityTarget) {
+        const step = aiBFS(state, unit.x, unit.y, cityTarget.x, cityTarget.y, domain);
+        if (step) {
+          const d = hexDistance(unit.x, unit.y, cityTarget.x, cityTarget.y);
+          const isEnemy = cityTarget.city.owner === 1;
+          const sc = (isEnemy ? 180 : 90) - d;
+          if (sc > bestScore) { bestScore = sc; bestAction = { type: 'move', step }; }
+        }
+      }
+    }
+
+    // ── D: Advance toward lowest-HP known enemy ───────────────────────────
+    if (unit.movesLeft > 0 && p1Units.length > 0) {
+      let bestTarget = null, bestTSc = -Infinity;
+      for (const eu of p1Units) {
+        const euDef = UNIT_DEFS[eu.type];
+        if (!euDef) continue;
+        if (domain === 'land' && euDef.domain === 'sea') continue;
+        if (domain === 'sea' && euDef.domain === 'land') continue;
+        const d = hexDistance(unit.x, unit.y, eu.x, eu.y);
+        const tsc = (1 - hpRatio(eu)) * 60 + 30 - d * 0.5;
+        if (tsc > bestTSc) { bestTSc = tsc; bestTarget = eu; }
+      }
+      if (bestTarget) {
+        const step = aiBFS(state, unit.x, unit.y, bestTarget.x, bestTarget.y, domain);
+        if (step) {
+          const sc = 40 + bestTSc * 0.5;
+          if (sc > bestScore) { bestScore = sc; bestAction = { type: 'move', step }; }
+        }
+      }
+    }
+
+    // ── E: Advance toward enemy city if we have city advantage ───────────
+    if (unit.movesLeft > 0 && aiCityAdvantage && enemyCities.length > 0) {
+      let best = null, bestD = Infinity;
+      for (const ec of enemyCities) {
+        const d = hexDistance(unit.x, unit.y, ec.x, ec.y);
+        if (d < bestD) { bestD = d; best = ec; }
+      }
+      if (best) {
+        const step = aiBFS(state, unit.x, unit.y, best.x, best.y, domain);
+        if (step) {
+          const sc = 35 - bestD * 0.3;
+          if (sc > bestScore) { bestScore = sc; bestAction = { type: 'move', step }; }
+        }
+      }
+    }
+
+    // ── F: Explore toward unknown territory ───────────────────────────────
+    if (!bestAction && unit.movesLeft > 0) {
+      let bestEx = null, bestExD = Infinity;
+      const searchR = 12;
+      for (let dy = -searchR; dy <= searchR; dy++) {
+        for (let dx = -searchR; dx <= searchR; dx++) {
+          const ex = unit.x + dx, ey = unit.y + dy;
+          if (ex < 0 || ex >= mapW || ey < 0 || ey >= mapH) continue;
+          const ek = ey * mapW + ex;
+          if (aiVisible.has(ek) || (aiExplored && aiExplored.has(ek))) continue;
+          const tile = state.tiles[ey][ex];
+          if (!tile || tile.type === 'void' || !checkMoveDomain(domain, tile.type, tile)) continue;
+          const d = hexDistance(unit.x, unit.y, ex, ey);
+          if (d < bestExD) { bestExD = d; bestEx = { x: ex, y: ey }; }
+        }
+      }
+      if (bestEx) {
+        const step = aiBFS(state, unit.x, unit.y, bestEx.x, bestEx.y, domain);
+        if (step) { bestScore = 5; bestAction = { type: 'move', step }; }
+      }
+    }
+
+    // ── Execute ───────────────────────────────────────────────────────────
     if (bestAction) {
-      if (bestAction.type === 'attack_adjacent') {
-        // Use attackUnit logic directly (unit stays, deals damage)
+      if (bestAction.type === 'attack') {
         const enemy = state.units.find(u => u.id === bestAction.enemy.id);
         if (enemy) {
           resolveCombat(state, unit, enemy);
           unit.hasAttacked = true;
           if (unit.fuel !== null) unit.fuel = Math.max(0, unit.fuel - 1);
         }
-        movedIds.add(unit.id);
       } else if (bestAction.type === 'move') {
         doMove(state, unit, bestAction.step.x, bestAction.step.y);
-        // After moving, if now adjacent to enemy and hasn't attacked, attack immediately
-        if (!unit.hasAttacked && unit.movesLeft >= 0) {
-          const freshAdj = state.units.filter(u => u.owner === 1 && hexDistance(unit.x, unit.y, u.x, u.y) === 1);
-          if (freshAdj.length > 0) {
-            // Pick lowest HP adjacent enemy
-            const target = freshAdj.sort((a, b) => (a.hp || 99) - (b.hp || 99))[0];
+        // After moving, attack adjacent enemy if not yet attacked
+        if (!unit.hasAttacked) {
+          const adjAfter = state.units.filter(u => u.owner === 1 && hexDistance(unit.x, unit.y, u.x, u.y) === 1);
+          if (adjAfter.length > 0) {
+            const target = adjAfter.sort((a, b) => (a.hp || 99) - (b.hp || 99))[0];
             const still = state.units.find(u => u.id === target.id);
             if (still) {
               resolveCombat(state, unit, still);
@@ -947,8 +927,8 @@ function runAILevel3(state) {
             }
           }
         }
-        movedIds.add(unit.id);
       }
+      movedIds.add(unit.id);
     }
   }
 
@@ -956,12 +936,10 @@ function runAILevel3(state) {
   for (const transport of state.units) {
     if (transport.owner !== 2 || transport.type !== 'transport' || movedIds.has(transport.id)) continue;
     if (transport.cargo && transport.cargo.length > 0) {
-      // Deliver to nearest enemy-coast land
       const target = enemyCities.length > 0 ? enemyCities[0] : findNearestCoastalLand(state, transport.x, transport.y);
       if (target) {
         const step = aiBFS(state, transport.x, transport.y, target.x, target.y, 'sea');
         if (step) doMove(state, transport, step.x, step.y);
-        // Unload if adjacent to land
         const nbs = hexNeighbors(transport.x, transport.y, mapW, mapH);
         const landNbs = nbs.filter(nb => {
           const t = state.tiles[nb.y][nb.x];
@@ -977,7 +955,7 @@ function runAILevel3(state) {
         }
       }
     } else {
-      // Pick up stranded land unit that can't reach enemy by land
+      // Load stranded land unit that can't reach enemy by land
       let strandedUnit = null;
       for (const lu of state.units) {
         if (lu.owner !== 2 || movedIds.has(lu.id)) continue;
@@ -1012,7 +990,7 @@ function runAILevel3(state) {
 }
 
 
-// ── AI BFS Pathfinding ────────────────────────────────────────────────
+
 function aiBFS(state, startX, startY, goalX, goalY, domain) {
   const mapW = state.mapW || MAP_W;
   const mapH = state.mapH || MAP_H;

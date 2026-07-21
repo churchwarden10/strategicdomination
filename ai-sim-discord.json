@@ -1,0 +1,26 @@
+{
+  "p1WinRate": "0%",
+  "p2WinRate": "0%",
+  "avgTurns": "151.0",
+  "avgFirstContact": "12.3",
+  "avgAttacksPerTurn": "3.10",
+  "bottlenecks": [
+    "⚠️  Slow exploration: First contact at turn 12.3 — AI takes 12 turns before armies meet",
+    "⚠️  Prolonged games: Avg 151 turns — AI lacks closing instinct, games drag on",
+    "⚠️  Late engagement: Combat peaks only at turns 125-129 — early turns wasted"
+  ],
+  "topRecommendations": [
+    {
+      "priority": "HIGH",
+      "issue": "Slow opening exploration",
+      "fix": "Increase exploration bonus weight from score 2 → 15. Add a \"blitz phase\" flag for turns 1-5 where units skip production-city-hunting and beeline toward center of map instead.",
+      "code": "// In exploration fallback, change:\nif (step) { bestScore = 2; ... }\n// to:\nconst turnBonus = Math.max(0, 10 - state.turn);\nif (step) { bestScore = 15 + turnBonus; ... }"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "Games drag on without decisive action",
+      "fix": "Add a \"siege mode\" after turn 20: if AI owns >50% of cities and there are known enemy cities, skip neutral expansion and mass all units toward closest enemy city. Also: stack tanks as primary production (not army) to create faster-moving assault groups.",
+      "code": "// Add before production decision:\nconst ownedCities = friendlyCities.length;\nconst totalKnownCities = friendlyCities.length + neutralCities.length + enemyCities.length;\nconst siegeMode = state.turn > 20 && ownedCities > totalKnownCities * 0.5;\nif (siegeMode) { prod = 'tank'; /* force tanks for fast push */ }"
+    }
+  ]
+}
