@@ -558,9 +558,10 @@
 <!-- Game Screen -->
 <div id="game" class="screen">
   <div id="topbar">
-    <span class="room">Room: <span id="tb-room">----</span></span>
+    <button onclick="goToMenu()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:0.72rem;cursor:pointer;flex-shrink:0;">&#8592; Menu</button>
+    <span class="room"><span id="tb-room">----</span></span>
     <span class="player-badge" id="tb-player">P1</span>
-    <span class="turn-info">Turn <span id="tb-turn">1</span></span>
+    <span class="turn-info">T<span id="tb-turn">1</span></span>
     <span id="tb-score"></span>
     <span class="timer" id="tb-timer" style="display:none"></span>
   </div>
@@ -662,6 +663,21 @@ var myPlayerNum = null;
 
 // ── Active Games Lobby ────────────────────────────────────────────────────
 // Store last known player info per room in localStorage so we can rejoin
+// ── Player name persistence ───────────────────────────────────────
+ function savePlayerName(name) {
+  try { localStorage.setItem('sd_playername', name); } catch(e) {}
+}
+function loadPlayerName() {
+  try { return localStorage.getItem('sd_playername') || ''; } catch(e) { return ''; }
+}
+
+function goToMenu() {
+  // Stay connected — game is still running, just go back to lobby
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('lobby').classList.add('active');
+  loadActiveGames();
+}
+
 function savePlayerSession(roomCode, playerNum, name) {
   try {
     var sessions = JSON.parse(localStorage.getItem('sd_sessions') || '{}');
@@ -746,6 +762,12 @@ function rejoinActiveGame(roomCode, name, playerNum) {
 
 // Load active games on page load and refresh every 15s
 window.addEventListener('load', function() {
+  // Restore saved player name
+  var savedName = loadPlayerName();
+  if (savedName) {
+    var nameInput = document.getElementById('player-name');
+    if (nameInput) nameInput.value = savedName;
+  }
   loadActiveGames();
   setInterval(loadActiveGames, 15000);
 });
@@ -1099,19 +1121,19 @@ window.addEventListener('load', function() {
 });
 function createGame() {
   var name = document.getElementById('player-name').value.trim() || 'Commander';
-  myName = name;
+  myName = name; savePlayerName(name);
   socket.emit('createGame', { name: name, mapSize: selectedMapSize });
 }
 function createSoloGame() {
   var name = document.getElementById('player-name').value.trim() || 'Commander';
-  myName = name;
+  myName = name; savePlayerName(name);
   socket.emit('createSoloGame', { name: name, mapSize: selectedMapSize });
 }
 function joinGame() {
   var code = document.getElementById('join-code').value.trim().toUpperCase();
   if (!code || code.length !== 4) { showToast('Enter a 4-letter room code'); return; }
   var name = document.getElementById('player-name').value.trim() || 'Commander';
-  myName = name;
+  myName = name; savePlayerName(name);
   socket.emit('joinGame', { roomCode: code, name: name });
 }
 
