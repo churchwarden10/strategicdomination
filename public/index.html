@@ -2617,6 +2617,37 @@ function onTouchMove(e) {
   }
 }
 
+// Double-tap detection
+var _lastTapTime = 0;
+var _lastTapX = 0;
+var _lastTapY = 0;
+var _singleTapTimer = null;
+var DBL_TAP_MS = 300;
+var DBL_TAP_RADIUS = 30;
+
+function handleTap(sx, sy) {
+  var now = Date.now();
+  var dx = sx - _lastTapX;
+  var dy = sy - _lastTapY;
+  var dist = Math.sqrt(dx*dx + dy*dy);
+  var isDouble = (now - _lastTapTime < DBL_TAP_MS) && (dist < DBL_TAP_RADIUS);
+  _lastTapTime = now;
+  _lastTapX = sx;
+  _lastTapY = sy;
+  if (isDouble) {
+    // Cancel pending single tap
+    if (_singleTapTimer) { clearTimeout(_singleTapTimer); _singleTapTimer = null; }
+    onCanvasDoubleTap(sx, sy);
+  } else {
+    // Delay single tap slightly to allow double-tap to cancel it
+    if (_singleTapTimer) { clearTimeout(_singleTapTimer); }
+    _singleTapTimer = setTimeout(function() {
+      _singleTapTimer = null;
+      onCanvasTap(sx, sy);
+    }, DBL_TAP_MS);
+  }
+}
+
 function onTouchEnd(e) {
   e.preventDefault();
   if (!didDrag && e.changedTouches.length === 1 && e.touches.length === 0) {
@@ -2624,7 +2655,7 @@ function onTouchEnd(e) {
     var rect = canvas.getBoundingClientRect();
     var cx = t.clientX - rect.left;
     var cy = t.clientY - rect.top;
-    onCanvasTap(cx, cy);
+    handleTap(cx, cy);
   }
   if (e.touches.length === 0) {
     dragStart = null;
@@ -2635,10 +2666,25 @@ function onTouchEnd(e) {
 
 function onCanvasClick(e) {
   if (didDrag) { didDrag = false; return; }
-  onCanvasTap(e.offsetX, e.offsetY);
+  handleTap(e.offsetX, e.offsetY);
 }
 
 // ── Click/Tap ──────────────────────────────────────────────────────────────
+function onCanvasDoubleTap(sx, sy) {
+  if (!gameState || gameState.phase !== 'playing') return;
+  var h = screenToHex(sx, sy);
+  var tx = h.col, ty = h.row;
+  if (tx < 0 || tx >= MAP_W || ty < 0 || ty >= MAP_H) return;
+  var tile = gameState.tiles[ty] && gameState.tiles[ty][tx];
+  if (!tile || tile.type !== 'city' || !tile.city || tile.city.owner !== myPlayerNum) return;
+  // Double tap on own city — open production popup directly
+  selectedCityPos = { x: tx, y: ty };
+  selectedCityScreenPos = { x: sx, y: sy };
+  selectedUnit = null;
+  showProdPopup(tile, selectedCityPos, selectedCityScreenPos);
+  render();
+}
+
 function onCanvasTap(sx, sy) {
   if (!gameState || gameState.phase !== 'playing') return;
 
@@ -2838,14 +2884,25 @@ function showProdPopup(ct, cityPos, screenPos) {
   var isCoastal = ct.city.coastal;
   var current = ct.city.production;
   var title = document.getElementById('prod-popup-title');
-  if (title) title.textContent = (isCoastal ? '🏝️ Coastal City' : '🏙️ Inland City') + ' — Production';
+  var currentLabel = '';
+  if (current) {
+    var curOpt = PROD_OPTIONS.find(function(o) { return o.value === current; });
+    var prog = ct.city.progress || 0;
+    var total = curOpt ? curOpt.turns : '?';
+    currentLabel = ' · ' + (curOpt ? curOpt.label : current) + ' (' + prog + '/' + total + 't)';
+  }
+  if (title) title.textContent = (isCoastal ? '🏝️' : '🏙️') + ' Production' + currentLabel;
   var old = popup.querySelectorAll('.prod-option');
   old.forEach(function(o) { o.parentNode.removeChild(o); });
   PROD_OPTIONS.forEach(function(opt) {
     if (opt.naval && !isCoastal) return;
     var div = document.createElement('div');
-    div.className = 'prod-option' + (opt.value === current ? ' selected' : '');
-    div.innerHTML = '<span>' + opt.label + '</span><span class="prod-turns">' + opt.turns + 't</span>';
+    var isCurrent = opt.value === current;
+    var prog = isCurrent ? (ct.city.progress || 0) : null;
+    div.className = 'prod-option' + (isCurrent ? ' selected' : '');
+    var progStr = isCurrent ? ' <span style="color:var(--gold);font-size:0.65rem">' + prog + '/' + opt.turns + '</span>' : '';
+    var check = isCurrent ? '✓ ' : '';
+    div.innerHTML = '<span>' + check + opt.label + progStr + '</span><span class="prod-turns">' + opt.turns + 't</span>';
     div.onclick = (function(val) {
       return function() {
         socket.emit('setProduction', { roomCode: myRoom, cityX: cityPos.x, cityY: cityPos.y, unitType: val });
