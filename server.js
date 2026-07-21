@@ -570,17 +570,24 @@ function advanceTurn(state) {
     }
   }
 
-  // Fuel: check for planes that have run out of fuel and aren't safe.
-  // Fuel only burns per-hex-move (in moveUnit), NOT per turn end.
-  // Planes crash only if they end a turn with 0 fuel and are not on a friendly city or carrier.
+  // Fuel: at end of each turn, air units not on a safe landing spot burn 1 fuel.
+  // If fuel hits 0 they crash immediately.
   for (const unit of [...state.units]) {
-    if (unit.fuel !== null && unit.fuel <= 0) {
-      const tile = state.tiles[unit.y][unit.x];
-      const onCarrier = state.units.some(u => u !== unit && u.owner === unit.owner && u.type === 'carrier' && u.x === unit.x && u.y === unit.y);
-      const onFriendlyCity = tile.type === 'city' && tile.city && tile.city.owner === unit.owner;
-      if (!onCarrier && !onFriendlyCity) {
-        state.units = state.units.filter(u => u.id !== unit.id);
-      }
+    if (unit.fuel === null) continue; // not an air unit
+    const tile = state.tiles[unit.y][unit.x];
+    const onCarrier = state.units.some(u => u !== unit && u.owner === unit.owner && u.type === 'carrier' && u.x === unit.x && u.y === unit.y);
+    const onFriendlyCity = tile.type === 'city' && tile.city && tile.city.owner === unit.owner;
+    if (onCarrier || onFriendlyCity) continue; // safely landed — no fuel burn, already refueled on landing
+    // Airborne — burn 1 fuel for staying aloft
+    unit.fuel = Math.max(0, unit.fuel - 1);
+    if (unit.fuel <= 0) {
+      // Crash
+      state.units = state.units.filter(u => u.id !== unit.id);
+      io.to(state.roomCode).emit('battleReport', {
+        attackerType: unit.type, attackerOwner: unit.owner,
+        defenderType: null, defenderOwner: null,
+        outcome: 'fuel_crash', location: { x: unit.x, y: unit.y }
+      });
     }
   }
 
@@ -1255,6 +1262,24 @@ function finishAITurn(state) {
         const spawned = spawnUnit(state, city.owner, city.production, x, y);
         if (spawned) city.progress = 0;
       }
+    }
+  }
+
+  // Fuel burn at turn end for P1 air units not safely landed
+  for (const unit of [...state.units]) {
+    if (unit.fuel === null || unit.owner !== 1) continue;
+    const tile = state.tiles[unit.y][unit.x];
+    const onCarrier = state.units.some(u => u !== unit && u.owner === 1 && u.type === 'carrier' && u.x === unit.x && u.y === unit.y);
+    const onFriendlyCity = tile.type === 'city' && tile.city && tile.city.owner === 1;
+    if (onCarrier || onFriendlyCity) continue;
+    unit.fuel = Math.max(0, unit.fuel - 1);
+    if (unit.fuel <= 0) {
+      state.units = state.units.filter(u => u.id !== unit.id);
+      io.to(state.roomCode).emit('battleReport', {
+        attackerType: unit.type, attackerOwner: unit.owner,
+        defenderType: null, defenderOwner: null,
+        outcome: 'fuel_crash', location: { x: unit.x, y: unit.y }
+      });
     }
   }
 
