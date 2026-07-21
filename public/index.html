@@ -997,17 +997,38 @@ function getUnitSymbol(type) {
 }
 
 function buildBattleEntryHTML(r) {
-  var atkSym = getUnitSymbol(r.attackerType);
-  var defSym = r.defenderType ? getUnitSymbol(r.defenderType) : '';
   var ac = r.attackerOwner === 1 ? '#58a6ff' : '#f85149';
   var dc = r.defenderOwner === 1 ? '#58a6ff' : '#f85149';
-  var a = '<b style="color:' + ac + '">P' + r.attackerOwner + '</b>' + atkSym;
-  var d = r.defenderType ? ('<b style="color:' + dc + '">P' + r.defenderOwner + '</b>' + defSym) : '';
-  if (r.outcome === 'fuel_crash')    return '⛽ ' + a + ' crashed';
-  if (r.outcome === 'attacker_wins') return '🗡️ ' + a + '→' + d + ' ✕';
-  if (r.outcome === 'mutual_kill')   return '💥 ' + a + '✕' + d + ' ✕ both';
-  if (r.outcome === 'defender_wins') return '🛡️ ' + d + '→' + a + ' ✕';
-  return '💨 ' + a + ' vs ' + d + ' miss';
+
+  function unitLabel(type, color) {
+    var name = type ? capitalize(type) : 'Unit';
+    return '<span style="color:' + color + ';font-weight:700">' + name + '</span>';
+  }
+  function hitMiss(hit) {
+    return hit
+      ? '<span style="color:#3fb950;font-weight:600"> Hit</span>'
+      : '<span style="color:#8b949e"> Miss</span>';
+  }
+
+  if (r.outcome === 'fuel_crash') {
+    return unitLabel(r.attackerType, ac) + ' crashed (out of fuel)';
+  }
+
+  var atkPart = unitLabel(r.attackerType, ac) + hitMiss(r.attackerHit);
+  var defPart = r.defenderType ? (unitLabel(r.defenderType, dc) + hitMiss(r.defenderHit)) : '';
+  var line = atkPart;
+  if (defPart) line += ' · ' + defPart;
+
+  // Append destroyed notice
+  if (r.outcome === 'attacker_wins') {
+    line += ' — ' + unitLabel(r.defenderType, dc) + ' <span style="color:#f85149">destroyed</span>';
+  } else if (r.outcome === 'defender_wins') {
+    line += ' — ' + unitLabel(r.attackerType, ac) + ' <span style="color:#f85149">destroyed</span>';
+  } else if (r.outcome === 'mutual_kill') {
+    line += ' — both <span style="color:#f85149">destroyed</span>';
+  }
+
+  return line;
 }
 
 function toggleBattleLog() {
@@ -1397,9 +1418,11 @@ function render() {
     ctx.fillRect(0, 0, vw, vh);
   })();
 
-  // Draw move range overlay for selected unit
-  if (selectedUnit && selectedUnit.owner === myPlayerNum && selectedUnit.movesLeft > 0) {
-    drawMoveRange(selectedUnit, tiles);
+  // Draw move range overlay for selected unit (also when movesLeft=0 to show attack targets)
+  if (selectedUnit && selectedUnit.owner === myPlayerNum) {
+    if (selectedUnit.movesLeft > 0 || !selectedUnit.hasAttacked) {
+      drawMoveRange(selectedUnit, tiles);
+    }
   }
 
   // Draw units - group by tile, show only most expensive unit per tile
@@ -1437,6 +1460,39 @@ function render() {
 
     var isSelected = selectedUnit && stack.some(function(u) { return u.id === selectedUnit.id; });
     drawUnit(ctx, cen2.x, cen2.y, size, displayUnit, stack.length, isSelected);
+  }
+
+  // ── Air hold indicator (tap-and-hold progress ring on target hex) ──────────
+  if (_airHoldTarget && _airHoldProgress > 0) {
+    var aht = _airHoldTarget;
+    var ahCen = hexToScreen(aht.toX, aht.toY);
+    var ahR = size * 0.55;
+    // Dim fill on target hex
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = '#ffdd00';
+    var ahPts = hexCorners(ahCen.x, ahCen.y, size - 1);
+    ctx.beginPath();
+    ctx.moveTo(ahPts[0].x, ahPts[0].y);
+    for (var ai = 1; ai < 6; ai++) ctx.lineTo(ahPts[ai].x, ahPts[ai].y);
+    ctx.closePath();
+    ctx.fill();
+    // Progress arc
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = '#ffdd00';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(ahCen.x, ahCen.y, ahR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * _airHoldProgress);
+    ctx.stroke();
+    // Label
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffdd00';
+    ctx.font = 'bold ' + Math.max(10, Math.floor(size * 0.28)) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Hold…', ahCen.x, ahCen.y);
+    ctx.restore();
   }
 }
 
@@ -2090,16 +2146,54 @@ function drawIconByType(ctx, type, cx, cy, s) {
 }
 
 // ── Move Range Highlight ───────────────────────────────────────────────────
+// Helper: draw only the outer boundary edges of a set of hexes in a given color.
+// hexSet is a plain object keyed by 'row,col' with values {col, row}.
+function drawRangeBoundary(hexSet, color, lineWidth) {
+  var size = cam.scale;
+  // For each hex in the set, check each of its 6 neighbors.
+  // If a neighbor is NOT in the set, draw that shared edge.
+  // We use the same offset-grid neighbor logic as hexNeighbors().
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (var key in hexSet) {
+    var h = hexSet[key];
+    var cen = hexToScreen(h.col, h.row);
+    if (cen.x < -size * 4 || cen.x > canvas.width + size * 4) continue;
+    if (cen.y < -size * 4 || cen.y > canvas.height + size * 4) continue;
+    var pts = hexCorners(cen.x, cen.y, size - 1);
+    var dirs = (h.row % 2 === 0) ? HEX_NEIGHBORS_EVEN : HEX_NEIGHBORS_ODD;
+    for (var di = 0; di < 6; di++) {
+      var nc = h.col + dirs[di][0];
+      var nr = h.row + dirs[di][1];
+      var nk = nr + ',' + nc;
+      if (!hexSet[nk]) {
+        // This edge is on the outer boundary — draw it.
+        // Each hex edge connects corner di to corner (di+1)%6.
+        var p0 = pts[di];
+        var p1 = pts[(di + 1) % 6];
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+      }
+    }
+  }
+  ctx.stroke();
+}
+
 function drawMoveRange(su, tiles) {
   var size = cam.scale;
   var domain = getDomain(su.type);
 
-  // For air units: draw fuel range in yellow BEHIND the move range
+  // For air units: BFS for fuel range, then draw outer boundary in yellow
   if (domain === 'air' && su.fuel !== null && su.fuel > 0) {
     var fuelReachable = {};
     var fuelVisited = {};
     var fuelQueue = [{ col: su.x, row: su.y, dist: 0 }];
     fuelVisited[su.y + ',' + su.x] = true;
+    // Include origin so boundary calc works correctly
+    fuelReachable[su.y + ',' + su.x] = { col: su.x, row: su.y };
     while (fuelQueue.length) {
       var fc = fuelQueue.shift();
       if (fc.dist > 0) fuelReachable[fc.row + ',' + fc.col] = { col: fc.col, row: fc.row };
@@ -2114,22 +2208,7 @@ function drawMoveRange(su, tiles) {
         }
       }
     }
-    for (var fkey in fuelReachable) {
-      var fh = fuelReachable[fkey];
-      var fcen = hexToScreen(fh.col, fh.row);
-      if (fcen.x < -size * 3 || fcen.x > canvas.width + size * 3) continue;
-      if (fcen.y < -size * 3 || fcen.y > canvas.height + size * 3) continue;
-      var fpts = hexCorners(fcen.x, fcen.y, size - 1);
-      ctx.beginPath();
-      ctx.moveTo(fpts[0].x, fpts[0].y);
-      for (var fk = 1; fk < 6; fk++) ctx.lineTo(fpts[fk].x, fpts[fk].y);
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(255,220,0,0.07)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,220,0,0.35)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
+    drawRangeBoundary(fuelReachable, 'rgba(255,220,0,0.85)', 2.5);
   }
 
   // BFS up to movesLeft hex distance - collect reachable tiles
@@ -2137,6 +2216,8 @@ function drawMoveRange(su, tiles) {
   var visited = {};
   var queue = [{ col: su.x, row: su.y, dist: 0 }];
   visited[su.y + ',' + su.x] = true;
+  // Include origin so boundary calc works correctly
+  reachable[su.y + ',' + su.x] = { col: su.x, row: su.y };
 
   while (queue.length) {
     var cur = queue.shift();
@@ -2161,37 +2242,37 @@ function drawMoveRange(su, tiles) {
     }
   }
 
-  var moveUnits = gameState ? gameState.units : [];
+  // Draw outer boundary ring for movement range in blue (only if has moves)
+  if (su.movesLeft > 0) {
+    drawRangeBoundary(reachable, 'rgba(0,191,255,0.85)', 2.5);
+  }
 
-  // Draw highlight border on reachable hexes
-  for (var key in reachable) {
-    var h = reachable[key];
-    var cen = hexToScreen(h.col, h.row);
-    // Skip if offscreen
-    if (cen.x < -size * 3 || cen.x > canvas.width + size * 3) continue;
-    if (cen.y < -size * 3 || cen.y > canvas.height + size * 3) continue;
-
-    // Check if hex is full (red highlight = can't move here unless fighting)
-    var hexFull = isTileFull(tiles, h.col, h.row, moveUnits);
-
-    var pts = hexCorners(cen.x, cen.y, size - 1);
-
-    // Translucent fill
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (var k = 1; k < 6; k++) ctx.lineTo(pts[k].x, pts[k].y);
-    ctx.closePath();
-    ctx.fillStyle = hexFull ? 'rgba(255,80,80,0.10)' : 'rgba(0,191,255,0.12)';
-    ctx.fill();
-
-    // Glowing border
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (var k = 1; k < 6; k++) ctx.lineTo(pts[k].x, pts[k].y);
-    ctx.closePath();
-    ctx.strokeStyle = hexFull ? 'rgba(255,80,80,0.55)' : 'rgba(0,191,255,0.75)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  // When out of moves but hasn't attacked yet: highlight adjacent enemy hexes in red (attack targets)
+  if (su.movesLeft === 0 && !su.hasAttacked && gameState) {
+    var adjEnemySet = {};
+    var adjNbs = hexNeighbors(su.x, su.y);
+    for (var ani = 0; ani < adjNbs.length; ani++) {
+      var an = adjNbs[ani];
+      var hasEnemy = gameState.units.some(function(u) { return u.owner !== myPlayerNum && u.x === an.x && u.y === an.y; });
+      if (hasEnemy) {
+        adjEnemySet[an.y + ',' + an.x] = { col: an.x, row: an.y };
+        // Draw red pulsing fill on enemy tiles within attack reach
+        var anCen = hexToScreen(an.x, an.y);
+        var anPts = hexCorners(anCen.x, anCen.y, size - 1);
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = '#ff4444';
+        ctx.beginPath();
+        ctx.moveTo(anPts[0].x, anPts[0].y);
+        for (var ak = 1; ak < 6; ak++) ctx.lineTo(anPts[ak].x, anPts[ak].y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    if (Object.keys(adjEnemySet).length > 0) {
+      drawRangeBoundary(adjEnemySet, 'rgba(255,80,80,0.85)', 2.5);
+    }
   }
 
   // Draw unload destination highlights (green pulsing hexes)
@@ -2570,11 +2651,53 @@ function clampCamera() {
   cam.y = Math.max(-pad, Math.min(mapH - canvas.height + pad, cam.y));
 }
 
+// ── Air-unit tap-and-hold state ────────────────────────────────────────────
+var _airHoldTimer = null;
+var _airHoldTarget = null; // { unitId, toX, toY, sx, sy }
+var _airHoldProgress = 0;  // 0–1 fill fraction
+var _airHoldRaf = null;
+var AIR_HOLD_MS = 600;     // hold duration to confirm move
+
+function cancelAirHold() {
+  if (_airHoldTimer) { clearTimeout(_airHoldTimer); _airHoldTimer = null; }
+  if (_airHoldRaf)   { cancelAnimationFrame(_airHoldRaf); _airHoldRaf = null; }
+  _airHoldTarget = null;
+  _airHoldProgress = 0;
+  render();
+}
+
+function startAirHold(unitId, toX, toY, sx, sy) {
+  cancelAirHold();
+  _airHoldTarget = { unitId: unitId, toX: toX, toY: toY, sx: sx, sy: sy };
+  var start = Date.now();
+  function tick() {
+    var elapsed = Date.now() - start;
+    _airHoldProgress = Math.min(1, elapsed / AIR_HOLD_MS);
+    render();
+    if (_airHoldProgress < 1) {
+      _airHoldRaf = requestAnimationFrame(tick);
+    }
+  }
+  _airHoldRaf = requestAnimationFrame(tick);
+  _airHoldTimer = setTimeout(function() {
+    if (_airHoldTimer === null) return; // cancelled
+    var t = _airHoldTarget;
+    _airHoldTarget = null;
+    _airHoldProgress = 0;
+    if (_airHoldRaf) { cancelAnimationFrame(_airHoldRaf); _airHoldRaf = null; }
+    socket.emit('moveUnit', { roomCode: myRoom, unitId: t.unitId, toX: t.toX, toY: t.toY });
+    clearSelection();
+    render();
+  }, AIR_HOLD_MS);
+}
+
 function onTouchStart(e) {
   e.preventDefault();
   hideUnitPicker();
   if (e.touches.length === 1) {
     var t = e.touches[0];
+    // Cancel any in-progress air hold if we start a new single touch
+    cancelAirHold();
     dragStart = { x: t.clientX, y: t.clientY, cx: cam.x, cy: cam.y };
     didDrag = false;
     cam.isDragging = false;
@@ -2595,6 +2718,7 @@ function onTouchMove(e) {
     if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
       cam.isDragging = true;
       didDrag = true;
+      cancelAirHold(); // finger moved — cancel any pending air hold
       cam.x = dragStart.cx - dx;
       cam.y = dragStart.cy - dy;
       clampCamera();
@@ -2738,10 +2862,26 @@ function onCanvasTap(sx, sy) {
       render(); updateHUD(); return;
     }
 
+    // Attack adjacent enemy even if unit is out of moves (tap enemy tile)
+    var enemiesAtTap = (gameState.units || []).filter(function(u) { return u.owner !== myPlayerNum && u.x === tx && u.y === ty; });
+    if (enemiesAtTap.length > 0 && !su.hasAttacked) {
+      var tapDist = hexDistance(su.x, su.y, tx, ty);
+      if (tapDist === 1 && su.movesLeft === 0) {
+        socket.emit('attackUnit', { roomCode: myRoom, attackerId: su.id, defenderX: tx, defenderY: ty });
+        clearSelection();
+        return;
+      }
+    }
+
     // Always try to MOVE first - even if there are friendly units on the destination
     if (su.owner === myPlayerNum && su.movesLeft > 0 && canUnitMoveTo(su, tile)) {
       var dist = hexDistance(su.x, su.y, tx, ty);
       if (dist <= su.movesLeft) {
+        // Air units require tap-and-hold to confirm move (prevents accidental moves while zooming)
+        if (getDomain(su.type) === 'air') {
+          startAirHold(su.id, tx, ty, sx, sy);
+          return;
+        }
         socket.emit('moveUnit', { roomCode: myRoom, unitId: su.id, toX: tx, toY: ty });
         clearSelection();
         return;

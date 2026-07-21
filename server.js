@@ -549,6 +549,7 @@ function advanceTurn(state) {
   for (const unit of state.units) {
     if (unit.owner === nextPlayer) {
       unit.movesLeft = UNIT_DEFS[unit.type].move;
+      unit.hasAttacked = false; // reset per-turn attack flag
     }
   }
 
@@ -1228,9 +1229,12 @@ function finishAITurn(state) {
   state.turnEnded[2] = false;
   state.aiPending = false;
 
-  // Restore player 1's movement points
+  // Restore player 1's movement points and reset attack flags
   for (const unit of state.units) {
-    if (unit.owner === 1) unit.movesLeft = UNIT_DEFS[unit.type].move;
+    if (unit.owner === 1) {
+      unit.movesLeft = UNIT_DEFS[unit.type].move;
+      unit.hasAttacked = false;
+    }
   }
 
   // Production tick for all cities
@@ -1797,6 +1801,44 @@ io.on('connection', socket => {
     socket.join(code);
     socket.emit('stateUpdate', buildClientState(state, pid));
     console.log(`Player ${pid} rejoined ${code} (screen wake/app resume)`);
+  });
+
+  // ── Attack adjacent enemy (even with 0 moves left) ────────────────────────
+  socket.on('attackUnit', ({ roomCode, attackerId, defenderX, defenderY }) => {
+    const state = games.get(roomCode);
+    if (!state || state.phase !== 'playing') return;
+    const player = state.players[socket.id];
+    if (!player) return;
+    const pnum = player.id;
+    if (!state.vsComputer && state.activePlayer !== pnum) return;
+
+    const attacker = state.units.find(u => u.id === attackerId && u.owner === pnum);
+    if (!attacker) return;
+
+    // Unit must have started the turn (i.e. has attacked = false, or no hasAttacked flag)
+    // We track hasAttacked per unit — if already attacked this turn, deny.
+    if (attacker.hasAttacked) return socket.emit('moveError', 'Unit already attacked this turn');
+
+    // Defender must be adjacent
+    const neighbors = hexNeighbors(attacker.x, attacker.y, state.mapW || MAP_W, state.mapH || MAP_H);
+    const isAdj = neighbors.some(n => n.x === defenderX && n.y === defenderY);
+    if (!isAdj) return socket.emit('moveError', 'Target not adjacent');
+
+    // Defender must be an enemy
+    const defenders = state.units.filter(u => u.owner !== pnum && u.x === defenderX && u.y === defenderY);
+    if (defenders.length === 0) return socket.emit('moveError', 'No enemy at target');
+
+    const defender = defenders[0];
+
+    // Resolve combat — attacker stays in place regardless of outcome
+    resolveCombat(state, attacker, defender);
+
+    // Mark unit as having attacked this turn
+    const stillAlive = state.units.find(u => u.id === attackerId);
+    if (stillAlive) stillAlive.hasAttacked = true;
+
+    checkWin(state);
+    broadcastState(state);
   });
 
   socket.on('endTurn', ({ roomCode }) => {
