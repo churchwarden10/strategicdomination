@@ -1139,7 +1139,7 @@ function render() {
     for (var col = startCol; col <= endCol; col++) {
       var tile = tiles[row] && tiles[row][col];
       if (!tile) continue;
-      if (tile.type === 'ocean' || tile.type === 'fog') hasAnimTiles = true;
+      if (tile.type === 'ocean') hasAnimTiles = true;
       var cen = hexToScreen(col, row);
       drawHex(ctx, cen.x, cen.y, size, tile, col, row, now);
     }
@@ -1228,42 +1228,18 @@ function drawHex(ctx, cx, cy, size, tile, col, row, now) {
 
   // ── FOG TILES ────────────────────────────────────────────────────────────
   if (tile.type === 'fog') {
-    // Dark gradient: slightly lighter center, very dark edges
-    var fogGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 1.1);
-    fogGrad.addColorStop(0, '#1e1e1e');
-    fogGrad.addColorStop(0.6, '#111');
-    fogGrad.addColorStop(1, '#080808');
-    ctx.fillStyle = fogGrad;
+    // Simple flat dark fill — no gradient, no stars, fast
+    ctx.fillStyle = '#0e1a0e';
     ctx.fill();
-
-    // Stable star-like dots seeded by col/row
-    if (size >= 10) {
-      ctx.save();
-      ctx.clip(hexPath);
-      var starCount = 4;
-      for (var si = 0; si < starCount; si++) {
-        var sr1 = seededRandN(col, row, si * 3);
-        var sr2 = seededRandN(col, row, si * 3 + 1);
-        var sr3 = seededRandN(col, row, si * 3 + 2);
-        // Place within the inner hex area
-        var sAngle = sr1 * Math.PI * 2;
-        var sDist = sr2 * size * 0.62;
-        var sx2 = cx + Math.cos(sAngle) * sDist;
-        var sy2 = cy + Math.sin(sAngle) * sDist;
-        var sRadius = 0.5 + sr3 * 0.8;
-        var sAlpha = 0.18 + sr3 * 0.22;
-        ctx.fillStyle = 'rgba(180,200,255,' + sAlpha + ')';
-        ctx.beginPath();
-        ctx.arc(sx2, sy2, sRadius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
+    // Subtle hex border to keep grid readable
+    ctx.strokeStyle = '#1a2e1a';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
     return;
   }
 
   var dimmed = tile.dimmed === true;
-  ctx.globalAlpha = dimmed ? 0.45 : 1.0;
+  ctx.globalAlpha = dimmed ? 0.55 : 1.0;
 
   // ── OCEAN TILES ──────────────────────────────────────────────────────────
   if (tile.type === 'ocean') {
