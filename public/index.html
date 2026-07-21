@@ -435,6 +435,22 @@
   .battle-entry.p1-atk { border-left-color: var(--blue-light); }
   .battle-entry.p2-atk { border-left-color: var(--red-light); }
   .battle-entry.both-survive { border-left-color: var(--muted); color: var(--muted); }
+  .active-game-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .active-game-info { flex: 1; min-width: 0; }
+  .active-game-code { font-size: 1rem; font-weight: bold; color: var(--text); letter-spacing: 2px; }
+  .active-game-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .active-game-btn { padding: 6px 14px; font-size: 0.8rem; border-radius: 8px; border: none; cursor: pointer; white-space: nowrap; }
+  .active-game-btn.rejoin { background: var(--blue); color: #fff; }
+  .active-game-btn.join { background: var(--green); color: #fff; }
   .legend-item { display: flex; align-items: center; gap: 3px; }
   .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
 </style>
@@ -446,6 +462,12 @@
   <div class="logo">
     <h1>⚔️ Strategic Conquest</h1>
     <p>Turn-based multiplayer strategy</p>
+  </div>
+
+  <!-- Active Games -->
+  <div id="active-games-section" class="card" style="display:none">
+    <h2 style="margin-bottom:8px">🎮 Active Games</h2>
+    <div id="active-games-list" style="display:flex;flex-direction:column;gap:6px;"></div>
   </div>
 
   <div class="card">
@@ -603,6 +625,95 @@ var socket = io();
 var myRoom = null;
 var myName = null;
 var myPlayerNum = null;
+
+// ── Active Games Lobby ────────────────────────────────────────────────────
+// Store last known player info per room in localStorage so we can rejoin
+function savePlayerSession(roomCode, playerNum, name) {
+  try {
+    var sessions = JSON.parse(localStorage.getItem('sd_sessions') || '{}');
+    sessions[roomCode] = { playerNum: playerNum, name: name, ts: Date.now() };
+    localStorage.setItem('sd_sessions', JSON.stringify(sessions));
+  } catch(e) {}
+}
+function getPlayerSession(roomCode) {
+  try {
+    var sessions = JSON.parse(localStorage.getItem('sd_sessions') || '{}');
+    return sessions[roomCode] || null;
+  } catch(e) { return null; }
+}
+function clearPlayerSession(roomCode) {
+  try {
+    var sessions = JSON.parse(localStorage.getItem('sd_sessions') || '{}');
+    delete sessions[roomCode];
+    localStorage.setItem('sd_sessions', JSON.stringify(sessions));
+  } catch(e) {}
+}
+
+function loadActiveGames() {
+  fetch('/api/games')
+    .then(function(r) { return r.json(); })
+    .then(function(games) {
+      var section = document.getElementById('active-games-section');
+      var list = document.getElementById('active-games-list');
+      if (!list) return;
+      list.innerHTML = '';
+      if (!games || games.length === 0) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      games.forEach(function(g) {
+        var session = getPlayerSession(g.roomCode);
+        var playerNames = g.players.map(function(p) { return 'P' + p.id + ': ' + p.name; }).join(' vs ');
+        var meta = (g.vsComputer ? 'vs CPU' : playerNames) + ' • Turn ' + g.turn + ' • ' + (g.mapSize === 'small' ? 'Small' : 'Large') + ' map';
+        var canRejoin = session !== null;
+        var canJoinAsP2 = !g.vsComputer && g.players.length < 2;
+        var card = document.createElement('div');
+        card.className = 'active-game-card';
+        card.innerHTML = '<div class="active-game-info">' +
+          '<div class="active-game-code">' + g.roomCode + '</div>' +
+          '<div class="active-game-meta">' + meta + '</div>' +
+          '</div>';
+        if (canRejoin) {
+          var btn = document.createElement('button');
+          btn.className = 'active-game-btn rejoin';
+          btn.textContent = '↩ Rejoin';
+          btn.onclick = (function(game, sess) {
+            return function() { rejoinActiveGame(game.roomCode, sess.name, sess.playerNum); };
+          })(g, session);
+          card.appendChild(btn);
+        } else if (canJoinAsP2) {
+          var btn2 = document.createElement('button');
+          btn2.className = 'active-game-btn join';
+          btn2.textContent = 'Join';
+          btn2.onclick = (function(game) {
+            return function() {
+              var nameInput = document.getElementById('player-name');
+              var n = (nameInput && nameInput.value.trim()) || 'Player 2';
+              document.getElementById('join-code').value = game.roomCode;
+              joinGame();
+            };
+          })(g);
+          card.appendChild(btn2);
+        }
+        list.appendChild(card);
+      });
+    })
+    .catch(function() { /* silently fail */ });
+}
+
+function rejoinActiveGame(roomCode, name, playerNum) {
+  myRoom = roomCode;
+  myName = name;
+  myPlayerNum = playerNum;
+  socket.emit('rejoinGame', { roomCode: roomCode, name: name, playerNum: playerNum });
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('game').classList.add('active');
+  initCanvas();
+}
+
+// Load active games on page load and refresh every 15s
+window.addEventListener('load', function() {
+  loadActiveGames();
+  setInterval(loadActiveGames, 15000);
+});
 var gameState = null;
 var selectedUnit = null;
 var selectedCityPos = null;
@@ -717,7 +828,7 @@ function hexDistance(c1, r1, c2, r2) {
 socket.on('gameCreated', function(data) {
   myRoom = data.roomCode;
   myPlayerNum = data.playerNum;
-  // Go straight into game screen, show waiting overlay with room code
+  savePlayerSession(data.roomCode, data.playerNum, myName);
   showGame();
   var overlay = document.getElementById('waiting-overlay');
   overlay.style.display = 'flex';
@@ -728,6 +839,7 @@ socket.on('gameCreated', function(data) {
 socket.on('gameJoined', function(data) {
   myRoom = data.roomCode;
   myPlayerNum = data.playerNum;
+  savePlayerSession(data.roomCode, data.playerNum, myName);
   document.getElementById('tb-room').textContent = data.roomCode;
   showGame();
 });
@@ -774,7 +886,7 @@ socket.on('stateUpdate', function(state) {
       render();
       updateHUD();
     }
-    if (state.phase === 'ended') showEndScreen(state);
+    if (state.phase === 'ended') { clearPlayerSession(myRoom); showEndScreen(state); }
   }
 });
 

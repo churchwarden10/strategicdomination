@@ -9,6 +9,26 @@ const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── Active Games API ───────────────────────────────────────────────────────
+app.get('/api/games', (req, res) => {
+  const active = [];
+  for (const [code, state] of games.entries()) {
+    if (state.phase === 'ended') continue;
+    const players = Object.values(state.players)
+      .filter(p => p.id === 1 || p.id === 2)
+      .map(p => ({ id: p.id, name: p.name }));
+    active.push({
+      roomCode: code,
+      phase: state.phase,
+      turn: state.turn,
+      vsComputer: state.vsComputer || false,
+      players,
+      mapSize: state.mapW <= 20 ? 'small' : 'large',
+    });
+  }
+  res.json(active);
+});
+
 // ── Constants ──────────────────────────────────────────────────────────────
 const MAP_W = 40, MAP_H = 40;
 const TURN_SECONDS = 99999; // disabled for testing
