@@ -90,7 +90,7 @@ function offsetToCube(col, row) {
 function isInHexBounds(col, row, mapW, mapH) {
   const centerCol = mapW / 2;
   const centerRow = mapH / 2;
-  const radius = Math.floor(mapW / 2) - 1;
+  const radius = Math.floor(mapW / 2); // use full radius, no shrinkage
   const a = offsetToCube(col, row);
   const b = offsetToCube(centerCol, centerRow);
   const dist = Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
