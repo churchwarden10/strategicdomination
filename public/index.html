@@ -586,6 +586,8 @@
     <span id="tb-score"></span>
     <span class="timer" id="tb-timer" style="display:none"></span>
   </div>
+  <!-- Unit details row — shown below topbar when a unit is selected -->
+  <div id="unit-details-bar" style="display:none;background:rgba(13,17,23,0.97);border-bottom:1px solid var(--border);padding:4px 10px;font-size:0.72rem;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;"></div>
 
   <div id="legend">
     <span class="legend-item"><span class="legend-dot" style="background:#0d2b4b;border:1px solid #1f6feb"></span>Ocean</span>
@@ -637,9 +639,6 @@
 <div id="prod-popup">
   <div id="prod-popup-title">🏙️ City Production</div>
 </div>
-
-<!-- Unit details bar — bottom of screen, shows selected unit stats -->
-<div id="unit-details-bar" style="position:fixed;bottom:0;left:0;right:0;z-index:180;background:rgba(13,17,23,0.97);border-top:1px solid var(--border);padding:5px 12px;font-size:0.72rem;color:var(--fg);display:none;min-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
 
 <!-- Battle log — button at bottom-left, panel pops up at top -->
 <button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;bottom:44px;left:10px;z-index:200;padding:6px 14px;font-size:0.78rem;border-radius:8px;border:1px solid var(--border);background:rgba(22,27,34,0.95);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️ Log</button>
@@ -2571,6 +2570,7 @@ function updateHUD() {
         if (nearbyTransports.length > 0) {
           var ta2 = document.getElementById('transport-actions');
           var btns2 = document.getElementById('transport-btns');
+          btns2.innerHTML = ''; // clear old buttons
           ta2.style.display = 'flex';
           nearbyTransports.forEach(function(tr) {
             var usedSlots2 = 0;
