@@ -2150,9 +2150,43 @@ function drawIconByType(ctx, type, cx, cy, s) {
 // hexSet is a plain object keyed by 'row,col' with values {col, row}.
 function drawRangeBoundary(hexSet, color, lineWidth) {
   var size = cam.scale;
-  // For each hex in the set, check each of its 6 neighbors.
-  // If a neighbor is NOT in the set, draw that shared edge.
-  // We use the same offset-grid neighbor logic as hexNeighbors().
+  // For each hex in the set, for each of its 6 edges:
+  // if the neighbor across that edge is NOT in the set, draw that edge.
+  //
+  // hexCorners() returns flat-top corners starting at angle -30°:
+  //   corner 0: top-right, 1: right, 2: bottom-right,
+  //   corner 3: bottom-left, 4: left, 5: top-left
+  // Edge i connects corner i to corner (i+1)%6.
+  //
+  // For offset-grid neighbors, edge index maps to neighbor direction:
+  // The neighbor sharing edge i (corner i → corner i+1) is:
+  //   edge 0 (top-right → right)      = NE neighbor
+  //   edge 1 (right → bottom-right)   = E  neighbor  (col+1, row)
+  //   edge 2 (bottom-right→bottom-left)= SE neighbor
+  //   edge 3 (bottom-left → left)      = SW neighbor
+  //   edge 4 (left → top-left)         = W  neighbor  (col-1, row)
+  //   edge 5 (top-left → top-right)    = NW neighbor
+  //
+  // We look up the actual neighbor col/row using HEX_NEIGHBORS_EVEN/ODD.
+  // The direction order in those arrays is: E, NE, NW, W, SW, SE
+  // i.e. index: 0=E, 1=NE, 2=NW, 3=W, 4=SW, 5=SE
+  //
+  // Edge-to-neighbor-dir-index mapping (edge → which neighbor dir):
+  //   edge 0 (NE edge) → dir 1 (NE)
+  //   edge 1 (E  edge) → dir 0 (E)
+  //   edge 2 (SE edge) → dir 5 (SE)
+  //   edge 3 (SW edge) → dir 4 (SW)
+  //   edge 4 (W  edge) → dir 3 (W)
+  //   edge 5 (NW edge) → dir 2 (NW)
+  // EVEN row dirs: 0=E[1,0], 1=NE[0,-1], 2=NW[-1,-1], 3=W[-1,0], 4=SW[-1,1], 5=SE[0,1]
+  // Edge 0 (TR->R)   faces E  -> dir 0
+  // Edge 1 (R->BR)   faces SE -> dir 5
+  // Edge 2 (BR->BL)  faces SW -> dir 4
+  // Edge 3 (BL->L)   faces W  -> dir 3
+  // Edge 4 (L->TL)   faces NW -> dir 2
+  // Edge 5 (TL->TR)  faces NE -> dir 1
+  var EDGE_TO_DIR = [0, 5, 4, 3, 2, 1];
+
   ctx.strokeStyle = color;
   ctx.lineWidth = lineWidth;
   ctx.lineCap = 'round';
@@ -2165,15 +2199,15 @@ function drawRangeBoundary(hexSet, color, lineWidth) {
     if (cen.y < -size * 4 || cen.y > canvas.height + size * 4) continue;
     var pts = hexCorners(cen.x, cen.y, size - 1);
     var dirs = (h.row % 2 === 0) ? HEX_NEIGHBORS_EVEN : HEX_NEIGHBORS_ODD;
-    for (var di = 0; di < 6; di++) {
+    for (var ei = 0; ei < 6; ei++) {
+      var di = EDGE_TO_DIR[ei];
       var nc = h.col + dirs[di][0];
       var nr = h.row + dirs[di][1];
       var nk = nr + ',' + nc;
       if (!hexSet[nk]) {
-        // This edge is on the outer boundary — draw it.
-        // Each hex edge connects corner di to corner (di+1)%6.
-        var p0 = pts[di];
-        var p1 = pts[(di + 1) % 6];
+        // Neighbor is outside the set — this is a boundary edge, draw it
+        var p0 = pts[ei];
+        var p1 = pts[(ei + 1) % 6];
         ctx.moveTo(p0.x, p0.y);
         ctx.lineTo(p1.x, p1.y);
       }
