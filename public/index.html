@@ -800,6 +800,7 @@ window.addEventListener('load', function() {
 var gameState = null;
 var selectedUnit = null;
 var selectedCityPos = null;
+var _pendingReselect = null; // unit id to re-select after next stateUpdate
 var selectedCityScreenPos = null; // screen coords of last city tap
 
 // ── Visual animation state ────────────────────────────────────────────────
@@ -928,6 +929,9 @@ socket.on('gameJoined', function(data) {
   showGame();
 });
 
+// Cache of city tile positions — rebuilt on each stateUpdate to avoid scanning all tiles per frame
+var _cityCache = []; // [{col, row, city}]
+
 socket.on('stateUpdate', function(state) {
   var prevState = gameState;
   gameState = state;
@@ -938,18 +942,26 @@ socket.on('stateUpdate', function(state) {
     MAP_H = state.mapH;
   }
 
-  // Detect city production completions for flash effect
-  if (prevState && state.tiles) {
-    for (var y = 0; y < state.tiles.length; y++) {
-      for (var x = 0; x < state.tiles[y].length; x++) {
-        var t = state.tiles[y][x];
-        var pt = prevState.tiles[y] && prevState.tiles[y][x];
-        if (t.type === 'city' && t.city && pt && pt.city) {
-          // If progress reset and owner is us → likely just completed
-          if (pt.city.progress > 0 && t.city.progress === 0 && t.city.owner === myPlayerNum) {
-            cityFlashTimers[t.city.id] = Date.now();
-          }
-        }
+  // Rebuild city cache — O(tiles) once per stateUpdate, not per frame
+  _cityCache = [];
+  if (state.tiles) {
+    for (var cy2 = 0; cy2 < state.tiles.length; cy2++) {
+      var row2 = state.tiles[cy2];
+      if (!row2) continue;
+      for (var cx2 = 0; cx2 < row2.length; cx2++) {
+        var t2 = row2[cx2];
+        if (t2 && t2.type === 'city' && t2.city) _cityCache.push({ col: cx2, row: cy2, city: t2.city, tile: t2 });
+      }
+    }
+  }
+
+  // Detect city production completions using cache (no full tile scan)
+  if (prevState && prevState.tiles) {
+    for (var ci = 0; ci < _cityCache.length; ci++) {
+      var cc = _cityCache[ci];
+      var pt = prevState.tiles[cc.row] && prevState.tiles[cc.row][cc.col];
+      if (pt && pt.city && pt.city.progress > 0 && cc.city.progress === 0 && cc.city.owner === myPlayerNum) {
+        cityFlashTimers[cc.city.id] = Date.now();
       }
     }
   }
@@ -963,7 +975,12 @@ socket.on('stateUpdate', function(state) {
     if (!alreadyInGame) {
       showGame();
     } else {
-      if (selectedUnit) {
+      // Re-select after move (keep unit selected so player can attack immediately)
+      if (_pendingReselect) {
+        var resel = state.units.find(function(u) { return u.id === _pendingReselect; });
+        selectedUnit = resel || null;
+        _pendingReselect = null;
+      } else if (selectedUnit) {
         var su = state.units.find(function(u) { return u.id === selectedUnit.id; });
         if (su) selectedUnit = su; else selectedUnit = null;
       }
@@ -2227,6 +2244,40 @@ function drawRangeBoundary(hexSet, color, lineWidth, outwardOffset) {
   ctx.stroke();
 }
 
+function drawRangeBoundaryAlternating(hexSet, colorA, colorB, lineWidth) {
+  // Collect all boundary edges, then paint them alternating colorA/colorB
+  var size = cam.scale;
+  var EDGE_TO_DIR = [0, 5, 4, 3, 2, 1];
+  var edges = [];
+  for (var key in hexSet) {
+    var h = hexSet[key];
+    var cen = hexToScreen(h.col, h.row);
+    if (cen.x < -size * 4 || cen.x > canvas.width + size * 4) continue;
+    if (cen.y < -size * 4 || cen.y > canvas.height + size * 4) continue;
+    var pts = hexCorners(cen.x, cen.y, size - 1);
+    var dirs = (h.row % 2 === 0) ? HEX_NEIGHBORS_EVEN : HEX_NEIGHBORS_ODD;
+    for (var ei = 0; ei < 6; ei++) {
+      var di = EDGE_TO_DIR[ei];
+      var nc = h.col + dirs[di][0];
+      var nr = h.row + dirs[di][1];
+      var nk = nr + ',' + nc;
+      if (!hexSet[nk]) {
+        edges.push({ x0: pts[ei].x, y0: pts[ei].y, x1: pts[(ei+1)%6].x, y1: pts[(ei+1)%6].y });
+      }
+    }
+  }
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  for (var i = 0; i < edges.length; i++) {
+    var e = edges[i];
+    ctx.strokeStyle = (i % 2 === 0) ? colorA : colorB;
+    ctx.beginPath();
+    ctx.moveTo(e.x0, e.y0);
+    ctx.lineTo(e.x1, e.y1);
+    ctx.stroke();
+  }
+}
+
 function drawMoveRange(su, tiles) {
   var size = cam.scale;
   var domain = getDomain(su.type);
@@ -2256,9 +2307,13 @@ function drawMoveRange(su, tiles) {
         }
       }
     }
-    // Draw fuel ring. If fuel === movesLeft the rings would overlap — offset fuel ring outward.
+    // Draw fuel ring. If fuel === movesLeft draw alternating blue/yellow segments.
     var fuelSameAsMove = (su.fuel === su.movesLeft);
-    drawRangeBoundary(fuelReachable, 'rgba(255,220,0,0.85)', 2.5, fuelSameAsMove ? 4 : 0);
+    if (fuelSameAsMove) {
+      drawRangeBoundaryAlternating(fuelReachable, 'rgba(255,220,0,0.9)', 'rgba(0,191,255,0.9)', 2.5);
+    } else {
+      drawRangeBoundary(fuelReachable, 'rgba(255,220,0,0.85)', 2.5, 0);
+    }
   }
 
   // BFS up to movesLeft hex distance - collect reachable tiles
@@ -2292,8 +2347,9 @@ function drawMoveRange(su, tiles) {
     }
   }
 
-  // Draw outer boundary ring for movement range in blue (only if has moves)
-  if (su.movesLeft > 0) {
+  // Draw outer boundary ring for movement range in blue (skip if already drawn as alternating)
+  var fuelMatchesMove = domain === 'air' && su.fuel !== null && su.fuel === su.movesLeft;
+  if (su.movesLeft > 0 && !fuelMatchesMove) {
     drawRangeBoundary(reachable, 'rgba(0,191,255,0.85)', 2.5);
   }
 
@@ -2614,12 +2670,11 @@ function clearUnloadMode() {
 }
 
 function countCitiesForPlayer(state, pid) {
+  // Use city cache instead of scanning all tiles
   var count = 0;
-  for (var y = 0; y < state.tiles.length; y++)
-    for (var x = 0; x < state.tiles[y].length; x++) {
-      var t = state.tiles[y][x];
-      if (t.type === 'city' && t.city && t.city.owner === pid) count++;
-    }
+  for (var i = 0; i < _cityCache.length; i++) {
+    if (_cityCache[i].city.owner === pid) count++;
+  }
   return count;
 }
 
@@ -2932,8 +2987,12 @@ function onCanvasTap(sx, sy) {
           startAirHold(su.id, tx, ty, sx, sy);
           return;
         }
+        var _keepId = su.id;
         socket.emit('moveUnit', { roomCode: myRoom, unitId: su.id, toX: tx, toY: ty });
-        clearSelection();
+        // Keep unit selected after move so player can attack without re-selecting
+        // selectedUnit will be refreshed from stateUpdate; store id to re-select
+        _pendingReselect = _keepId;
+        selectedCityPos = null;
         return;
       }
       // Too far - fall through to show toast only if no other action

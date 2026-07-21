@@ -484,11 +484,17 @@ function resolveCombat(state, attacker, defender) {
   const atkStats = UNIT_COMBAT[attacker.type] || { attack: 1, defense: 1 };
   const defStats = UNIT_COMBAT[defender.type] || { attack: 1, defense: 1 };
 
-  // Both sides roll simultaneously
-  const atkRoll = Math.ceil(Math.random() * 6);
-  const defRoll = Math.ceil(Math.random() * 6);
-  const atkHit = atkRoll <= atkStats.attack;
-  const defHit = defRoll <= defStats.defense;
+  // Auto-reroll on both-miss until someone gets a hit (hide intermediate misses from log)
+  let atkRoll, defRoll, atkHit, defHit;
+  let rolls = 0;
+  do {
+    atkRoll = Math.ceil(Math.random() * 6);
+    defRoll = Math.ceil(Math.random() * 6);
+    atkHit = atkRoll <= atkStats.attack;
+    defHit = defRoll <= defStats.defense;
+    rolls++;
+    if (rolls > 20) break; // safety cap
+  } while (!atkHit && !defHit);
 
   let outcome;
 
@@ -505,8 +511,7 @@ function resolveCombat(state, attacker, defender) {
     state.units = state.units.filter(u => u.id !== attacker.id);
     outcome = 'defender_wins';
   } else {
-    // Both missed — nobody dies
-    outcome = 'both_missed';
+    outcome = 'both_missed'; // only reached if safety cap hit
   }
 
   const report = {
@@ -531,7 +536,7 @@ function resolveCombat(state, attacker, defender) {
   if (outcome === 'attacker_wins') return attacker;
   if (outcome === 'mutual_kill') return null;
   if (outcome === 'defender_wins') return null;
-  return attacker; // both missed — attacker stays
+  return attacker; // both missed (safety cap) — attacker stays
 }
 
 // ── Turn / Production ──────────────────────────────────────────────────────
@@ -1833,9 +1838,26 @@ io.on('connection', socket => {
     // Resolve combat — attacker stays in place regardless of outcome
     resolveCombat(state, attacker, defender);
 
-    // Mark unit as having attacked this turn
+    // Mark unit as having attacked this turn; air units burn 1 fuel per attack
     const stillAlive = state.units.find(u => u.id === attackerId);
-    if (stillAlive) stillAlive.hasAttacked = true;
+    if (stillAlive) {
+      stillAlive.hasAttacked = true;
+      if (stillAlive.fuel !== null) {
+        stillAlive.fuel = Math.max(0, stillAlive.fuel - 1);
+        // Crash if out of fuel with no safe landing
+        const curTile = state.tiles[stillAlive.y][stillAlive.x];
+        const onCarrier = state.units.some(u => u !== stillAlive && u.owner === pnum && u.type === 'carrier' && u.x === stillAlive.x && u.y === stillAlive.y);
+        const onFriendlyCity = curTile.type === 'city' && curTile.city && curTile.city.owner === pnum;
+        if (stillAlive.fuel <= 0 && !onCarrier && !onFriendlyCity) {
+          state.units = state.units.filter(u => u.id !== stillAlive.id);
+          io.to(state.roomCode).emit('battleReport', {
+            attackerType: stillAlive.type, attackerOwner: stillAlive.owner,
+            defenderType: null, defenderOwner: null,
+            outcome: 'fuel_crash', location: { x: stillAlive.x, y: stillAlive.y }
+          });
+        }
+      }
+    }
 
     checkWin(state);
     broadcastState(state);
