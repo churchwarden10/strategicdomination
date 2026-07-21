@@ -234,23 +234,44 @@
   .info-block .label { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
   .info-block .value { color: var(--text); margin-top: 2px; }
 
-  #prod-select-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 2;
-    min-width: 160px;
-  }
-  #prod-select-wrap label { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; }
-  #prod-select {
-    background: var(--bg);
+  #prod-select-wrap { display: none; }
+  #prod-popup {
+    position: fixed;
+    z-index: 300;
+    background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    padding: 5px 8px;
-    font-size: 0.82rem;
-    -webkit-appearance: none;
+    border-radius: 12px;
+    padding: 6px 4px;
+    min-width: 190px;
+    max-width: 220px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    display: none;
+    flex-direction: column;
+    gap: 2px;
   }
+  #prod-popup-title {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+  }
+  .prod-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--text);
+    transition: background 0.1s;
+  }
+  .prod-option:hover, .prod-option.selected { background: rgba(31,111,235,0.18); }
+  .prod-option.disabled { color: #444; cursor: default; }
+  .prod-option .prod-turns { font-size: 0.68rem; color: var(--muted); margin-left: auto; }
 
   #transport-actions {
     display: flex;
@@ -612,6 +633,11 @@
 
 <!-- Fixed End Turn button — always bottom-right, above everything -->
 <!-- Battle log overlay — shown/hidden via toggle button -->
+<!-- Production popup -->
+<div id="prod-popup">
+  <div id="prod-popup-title">🏙️ City Production</div>
+</div>
+
 <button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;bottom:80px;left:10px;z-index:200;padding:6px 14px;font-size:0.78rem;border-radius:8px;border:1px solid var(--border);background:rgba(22,27,34,0.95);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️ Log</button>
 <div id="battle-log-wrap" style="position:fixed;bottom:120px;left:10px;right:10px;z-index:190;background:rgba(22,27,34,0.96);border:1px solid var(--border);border-radius:10px;padding:4px 8px;display:none;flex-direction:column;gap:0;">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
@@ -774,6 +800,7 @@ window.addEventListener('load', function() {
 var gameState = null;
 var selectedUnit = null;
 var selectedCityPos = null;
+var selectedCityScreenPos = null; // screen coords of last city tap
 
 // ── Visual animation state ────────────────────────────────────────────────
 var _animRafId = null;       // requestAnimationFrame handle for continuous animation
@@ -2320,20 +2347,7 @@ function updateHUD() {
   } else if (selectedCityPos) {
     var ct = state.tiles[selectedCityPos.y] && state.tiles[selectedCityPos.y][selectedCityPos.x];
     if (ct && ct.type === 'city' && ct.city && ct.city.owner === myPlayerNum) {
-      var isCoastal = ct.city.coastal;
-      // unit-details removed
-      var navalTypes = ['destroyer','submarine','transport','carrier','battleship'];
-      var sel = document.getElementById('prod-select');
-      for (var oi = 0; oi < sel.options.length; oi++) {
-        var opt = sel.options[oi];
-        if (navalTypes.indexOf(opt.value) >= 0) {
-          opt.disabled = !isCoastal;
-          opt.style.color = isCoastal ? '' : '#555';
-        }
-      }
-      if (!isCoastal && navalTypes.indexOf(ct.city.production) >= 0) sel.value = '';
-      else sel.value = ct.city.production || '';
-      document.getElementById('prod-select-wrap').style.display = 'flex';
+      showProdPopup(ct, selectedCityPos, selectedCityScreenPos);
     } else {
       clearSelection();
     }
@@ -2728,6 +2742,7 @@ function onCanvasTap(sx, sy) {
 
   if (tile.type === 'city' && tile.city && tile.city.owner === myPlayerNum) {
     selectedCityPos = { x: tx, y: ty };
+    selectedCityScreenPos = { x: sx, y: sy };
     selectedUnit = null;
     render(); updateHUD(); return;
   }
@@ -2767,15 +2782,16 @@ function showUnitPicker(units, sx, sy, cityPos) {
     cityItem.innerHTML = '<span class="pu-sym">🏙️</span>' +
       '<span class="pu-info"><span class="pu-name">Select City</span>' +
       '<span class="pu-moves">Change production</span></span>';
-    cityItem.onclick = (function(cp) {
+    cityItem.onclick = (function(cp, csx, csy) {
       return function() {
         selectedCityPos = cp;
+        selectedCityScreenPos = { x: csx, y: csy };
         selectedUnit = null;
         hideUnitPicker();
         render();
         updateHUD();
       };
-    })(cityPos);
+    })(cityPos, sx, sy);
     list.appendChild(cityItem);
   }
 
@@ -2798,7 +2814,71 @@ function hideUnitPicker() {
 function clearSelection() {
   selectedUnit = null;
   selectedCityPos = null;
+  selectedCityScreenPos = null;
+  hideProdPopup();
   clearUnloadMode();
+}
+
+// Production Popup
+var PROD_OPTIONS = [
+  { value: 'army',       label: '🪶 Infantry',  turns: 1,  naval: false },
+  { value: 'tank',       label: '🛡️ Tank',      turns: 2,  naval: false },
+  { value: 'fighter',    label: '✈️ Fighter',   turns: 4,  naval: false },
+  { value: 'bomber',     label: '💣 Bomber',    turns: 5,  naval: false },
+  { value: 'destroyer',  label: '🚢 Destroyer', turns: 4,  naval: true  },
+  { value: 'submarine',  label: '🤿 Sub',       turns: 4,  naval: true  },
+  { value: 'transport',  label: '⛴️ Transport', turns: 3,  naval: true  },
+  { value: 'carrier',    label: '🛳️ Carrier',   turns: 8,  naval: true  },
+  { value: 'battleship', label: '⚓ Battleship',turns: 8,  naval: true  },
+];
+
+function showProdPopup(ct, cityPos, screenPos) {
+  var popup = document.getElementById('prod-popup');
+  if (!popup) return;
+  var isCoastal = ct.city.coastal;
+  var current = ct.city.production;
+  var title = document.getElementById('prod-popup-title');
+  if (title) title.textContent = (isCoastal ? '🏝️ Coastal City' : '🏙️ Inland City') + ' — Production';
+  var old = popup.querySelectorAll('.prod-option');
+  old.forEach(function(o) { o.parentNode.removeChild(o); });
+  PROD_OPTIONS.forEach(function(opt) {
+    if (opt.naval && !isCoastal) return;
+    var div = document.createElement('div');
+    div.className = 'prod-option' + (opt.value === current ? ' selected' : '');
+    div.innerHTML = '<span>' + opt.label + '</span><span class="prod-turns">' + opt.turns + 't</span>';
+    div.onclick = (function(val) {
+      return function() {
+        socket.emit('setProduction', { roomCode: myRoom, cityX: cityPos.x, cityY: cityPos.y, unitType: val });
+        hideProdPopup();
+        clearSelection();
+      };
+    })(opt.value);
+    popup.appendChild(div);
+  });
+  popup.style.display = 'flex';
+  var pw = 210;
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var sx = screenPos ? screenPos.x : vw / 2;
+  var sy = screenPos ? screenPos.y : vh / 2;
+  var left = Math.min(sx + 10, vw - pw - 8);
+  var ph = popup.scrollHeight || 300;
+  var top = sy - ph / 2;
+  top = Math.max(60, Math.min(top, vh - ph - 8));
+  popup.style.left = left + 'px';
+  popup.style.top = top + 'px';
+  setTimeout(function() {
+    document.addEventListener('click', hideProdPopupOutside, { once: true });
+  }, 50);
+}
+
+function hideProdPopupOutside(e) {
+  var popup = document.getElementById('prod-popup');
+  if (popup && !popup.contains(e.target)) hideProdPopup();
+}
+
+function hideProdPopup() {
+  var popup = document.getElementById('prod-popup');
+  if (popup) popup.style.display = 'none';
 }
 
 // ── Game actions ───────────────────────────────────────────────────────────
