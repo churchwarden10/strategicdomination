@@ -2133,15 +2133,16 @@ function drawUnit(ctx, cx, cy, size, unit, stackCount, isSelected) {
     ctx.fillText(stackCount, cx + size * 0.52, cy - size * 0.52);
   }
 
-  // HP bar (above the unit, small colored bar)
+  // HP bar — sits at the seam between the unit icon area and the player color strip at the bottom
   if (unit.hp != null && unit.maxHp != null && size >= 12) {
     var hpRatio = unit.hp / unit.maxHp;
-    var barW = size * 1.1;
-    var barH = size * 0.12;
+    var barH = Math.max(3, size * 0.13);
+    // Width tapers to match the hex width at the strip seam (~55% down from center)
+    var barW = size * 1.05;
     var barX = cx - barW / 2;
-    var barY = cy - size * 0.92;
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = '#333';
+    var barY = stripTop - barH; // right above the color strip
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = '#1a1e26'; // dark background track
     ctx.fillRect(barX, barY, barW, barH);
     ctx.fillStyle = hpRatio > 0.6 ? '#3fb950' : hpRatio > 0.3 ? '#f0a030' : '#f85149';
     ctx.fillRect(barX, barY, barW * hpRatio, barH);
