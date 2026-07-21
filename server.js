@@ -657,10 +657,20 @@ function runAILevel3(state) {
   const mapH = state.mapH || MAP_H;
   if (state.phase !== 'playing') return;
 
-  const aiUnits   = state.units.filter(u => u.owner === 2);
-  const p1Units   = state.units.filter(u => u.owner === 1);
+  // ── Fog of war: AI only knows what player 2 can currently see or has explored ──
+  const aiVisible  = getVisibleTiles(state, 2); // tiles currently in sight
+  const aiExplored = state.exploredTiles ? state.exploredTiles[2] : null;
 
-  // ── City lists ──────────────────────────────────────────────────────────
+  function aiCanSee(x, y) {
+    return aiVisible.has(y * mapW + x);
+  }
+
+  // AI only sees enemy units in currently visible tiles
+  const p1Units = state.units.filter(u => u.owner === 1 && aiCanSee(u.x, u.y));
+
+  const aiUnits = state.units.filter(u => u.owner === 2);
+
+  // ── City lists (fog-filtered: only cities AI has explored) ─────────────
   const neutralCities  = [];
   const friendlyCities = [];
   const enemyCities    = [];
@@ -668,7 +678,13 @@ function runAILevel3(state) {
     for (let x = 0; x < mapW; x++) {
       const tile = state.tiles[y][x];
       if (tile.type !== 'city' || !tile.city) continue;
+      const key = y * mapW + x;
+      // Only include cities the AI has seen (currently visible or previously explored)
+      const known = aiVisible.has(key) || (aiExplored && aiExplored.has(key));
+      if (!known) continue;
       const pos = { x, y, city: tile.city, tile };
+      // For explored-but-not-currently-visible tiles, use last known ownership
+      // (which is what's stored in state.tiles — same as a human would remember)
       if (!tile.city.owner || tile.city.owner === 0) neutralCities.push(pos);
       else if (tile.city.owner === 2) friendlyCities.push(pos);
       else enemyCities.push(pos);
@@ -865,6 +881,28 @@ function runAILevel3(state) {
           if (best) {
             const step = aiBFS(state, unit.x, unit.y, best.x, best.y, domain);
             if (step) { bestScore = 5; bestAction = { type: 'move', step }; }
+          }
+        }
+        // Exploration fallback: if no enemy targets known, move toward nearest unexplored tile
+        if (!bestAction && unit.movesLeft > 0) {
+          let bestExploreTile = null, bestExploreDist = Infinity;
+          // Sample candidate unexplored tiles near unit
+          for (let dy = -6; dy <= 6; dy++) {
+            for (let dx = -6; dx <= 6; dx++) {
+              const ex = unit.x + dx, ey = unit.y + dy;
+              if (ex < 0 || ex >= mapW || ey < 0 || ey >= mapH) continue;
+              const ek = ey * mapW + ex;
+              if (aiVisible.has(ek) || (aiExplored && aiExplored.has(ek))) continue;
+              const tile = state.tiles[ey][ex];
+              if (!tile || tile.type === 'void') continue;
+              if (!checkMoveDomain(domain, tile.type, tile)) continue;
+              const d = hexDistance(unit.x, unit.y, ex, ey);
+              if (d < bestExploreDist) { bestExploreDist = d; bestExploreTile = { x: ex, y: ey }; }
+            }
+          }
+          if (bestExploreTile) {
+            const step = aiBFS(state, unit.x, unit.y, bestExploreTile.x, bestExploreTile.y, domain);
+            if (step) { bestScore = 2; bestAction = { type: 'move', step }; }
           }
         }
       }
