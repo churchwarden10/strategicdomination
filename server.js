@@ -33,17 +33,17 @@ app.get('/api/games', (req, res) => {
 const MAP_W = 40, MAP_H = 40;
 const TURN_SECONDS = 99999; // disabled for testing
 
-// Unit stats sourced from Strategic Domination spreadsheet (updated 2026-07-19)
+// Unit stats
 const UNIT_DEFS = {
-  army:       { buildTime: 1,  move: 1,  domain: 'land',  fuel: null, carries: null,      canCapture: true,  symbol: '🪖', slots: 1 },
-  tank:       { buildTime: 2,  move: 2,  domain: 'land',  fuel: null, carries: null,      canCapture: true,  symbol: '🛡️', slots: 2 },
-  fighter:    { buildTime: 4,  move: 10, domain: 'air',   fuel: 10,   carries: null,      canCapture: false, symbol: '✈️', slots: 0 },
-  bomber:     { buildTime: 5,  move: 15, domain: 'air',   fuel: 15,   carries: null,      canCapture: false, symbol: '💣', slots: 0 },
-  submarine:  { buildTime: 4,  move: 4,  domain: 'sea',   fuel: null, carries: null,      canCapture: false, symbol: '🤿', hidden: true, slots: 0 },
-  destroyer:  { buildTime: 4,  move: 4,  domain: 'sea',   fuel: null, carries: null,      canCapture: false, symbol: '🚢', slots: 0 },
-  transport:  { buildTime: 3,  move: 3,  domain: 'sea',   fuel: null, carries: 'army',    canCapture: false, capacity: 3, symbol: '⛴️', slots: 0 },
-  carrier:    { buildTime: 8,  move: 3,  domain: 'sea',   fuel: null, carries: 'fighter', canCapture: false, capacity: 8, symbol: '🛳️', slots: 0 },
-  battleship: { buildTime: 8,  move: 3,  domain: 'sea',   fuel: null, carries: null,      canCapture: false, symbol: '⚓', slots: 0 },
+  army:       { buildTime: 1,  move: 1,  domain: 'land',  fuel: null, carries: null,      canCapture: true,  symbol: '🪖', slots: 1,  maxHp: 3  },
+  tank:       { buildTime: 2,  move: 2,  domain: 'land',  fuel: null, carries: null,      canCapture: true,  symbol: '🛡️', slots: 2,  maxHp: 6  },
+  fighter:    { buildTime: 4,  move: 10, domain: 'air',   fuel: 10,   carries: null,      canCapture: false, symbol: '✈️', slots: 0,  maxHp: 6  },
+  bomber:     { buildTime: 5,  move: 15, domain: 'air',   fuel: 15,   carries: null,      canCapture: false, symbol: '💣', slots: 0,  maxHp: 8  },
+  submarine:  { buildTime: 4,  move: 4,  domain: 'sea',   fuel: null, carries: null,      canCapture: false, symbol: '🤿', hidden: true, slots: 0, maxHp: 4 },
+  destroyer:  { buildTime: 4,  move: 4,  domain: 'sea',   fuel: null, carries: null,      canCapture: false, symbol: '🚢', slots: 0,  maxHp: 5  },
+  transport:  { buildTime: 3,  move: 3,  domain: 'sea',   fuel: null, carries: 'army',    canCapture: false, capacity: 3, symbol: '⛴️', slots: 0, maxHp: 10 },
+  carrier:    { buildTime: 8,  move: 3,  domain: 'sea',   fuel: null, carries: 'fighter', canCapture: false, capacity: 8, symbol: '🛳️', slots: 0, maxHp: 10 },
+  battleship: { buildTime: 8,  move: 3,  domain: 'sea',   fuel: null, carries: null,      canCapture: false, symbol: '⚓', slots: 0,  maxHp: 10 },
 };
 
 // ── Hex neighbor tables (pointy-top, odd-r offset) ─────────────────────────
@@ -327,6 +327,8 @@ function spawnUnit(state, owner, type, x, y) {
     x, y,
     movesLeft: def.move,
     fuel: def.fuel,
+    hp: def.maxHp,
+    maxHp: def.maxHp,
     cargo: [],
     symbol: def.symbol,
   };
@@ -456,7 +458,6 @@ function buildClientState(state, playerNum) {
 }
 
 // ── Combat Stats ──────────────────────────────────────────────────────────
-// Combat stats sourced from Strategic Domination spreadsheet (updated 2026-07-19)
 const UNIT_COMBAT = {
   army:       { attack: 2, defense: 2 },
   tank:       { attack: 3, defense: 3 },
@@ -464,79 +465,70 @@ const UNIT_COMBAT = {
   bomber:     { attack: 4, defense: 2 },
   submarine:  { attack: 2, defense: 2 },
   destroyer:  { attack: 2, defense: 2 },
-  transport:  { attack: 0, defense: 0 },
+  transport:  { attack: 0, defense: 1 },
   carrier:    { attack: 1, defense: 2 },
   battleship: { attack: 4, defense: 4 },
 };
 
-// ── Combat ─────────────────────────────────────────────────────────────────
-// Combat mechanics:
-//   1. Attacker rolls — hit if roll ≤ attack value.
-//   2. Defender ALWAYS rolls — hit if roll ≤ defense value (simultaneous fire).
-//   3. Outcomes:
-//      - Attacker hit, defender missed  → defender destroyed (attacker wins)
-//      - Attacker missed, defender hit  → attacker destroyed (defender wins)
-//      - Both hit                        → both destroyed (mutual kill)
-//      - Both missed                     → nobody dies, attacker stays put
-//
-// Returns the surviving attacker unit (or null if attacker died).
+// ── Combat ─────────────────────────────────────────────────────────
+// Damage-based HP combat:
+//   - Roll d6 simultaneously. Hit if roll <= stat. Damage = roll value.
+//   - Both-miss re-rolls silently. Units die at hp <= 0.
 function resolveCombat(state, attacker, defender) {
   const atkStats = UNIT_COMBAT[attacker.type] || { attack: 1, defense: 1 };
   const defStats = UNIT_COMBAT[defender.type] || { attack: 1, defense: 1 };
 
-  // Auto-reroll on both-miss until someone gets a hit (hide intermediate misses from log)
-  let atkRoll, defRoll, atkHit, defHit;
+  // Backfill HP for old units
+  if (attacker.hp == null) { attacker.hp = UNIT_DEFS[attacker.type]?.maxHp || 3; attacker.maxHp = attacker.hp; }
+  if (defender.hp == null) { defender.hp = UNIT_DEFS[defender.type]?.maxHp || 3; defender.maxHp = defender.hp; }
+
+  let atkRoll, defRoll, atkDmg, defDmg;
   let rolls = 0;
   do {
     atkRoll = Math.ceil(Math.random() * 6);
     defRoll = Math.ceil(Math.random() * 6);
-    atkHit = atkRoll <= atkStats.attack;
-    defHit = defRoll <= defStats.defense;
+    atkDmg = atkRoll <= atkStats.attack ? atkRoll : 0;
+    defDmg = defRoll <= defStats.defense ? defRoll : 0;
     rolls++;
-    if (rolls > 20) break; // safety cap
-  } while (!atkHit && !defHit);
+    if (rolls > 20) break;
+  } while (atkDmg === 0 && defDmg === 0);
+
+  if (atkDmg > 0) defender.hp = Math.max(0, defender.hp - atkDmg);
+  if (defDmg > 0) attacker.hp = Math.max(0, attacker.hp - defDmg);
+
+  const defenderDied = defender.hp <= 0;
+  const attackerDied = attacker.hp <= 0;
 
   let outcome;
-
-  if (atkHit && defHit) {
-    // Both hit — mutual kill
-    state.units = state.units.filter(u => u.id !== defender.id && u.id !== attacker.id);
+  if (attackerDied && defenderDied) {
+    state.units = state.units.filter(u => u.id !== attacker.id && u.id !== defender.id);
     outcome = 'mutual_kill';
-  } else if (atkHit) {
-    // Attacker hit, defender missed — defender destroyed
+  } else if (defenderDied) {
     state.units = state.units.filter(u => u.id !== defender.id);
     outcome = 'attacker_wins';
-  } else if (defHit) {
-    // Defender hit, attacker missed — attacker destroyed
+  } else if (attackerDied) {
     state.units = state.units.filter(u => u.id !== attacker.id);
     outcome = 'defender_wins';
   } else {
-    outcome = 'both_missed'; // only reached if safety cap hit
+    outcome = 'both_survived';
   }
 
   const report = {
-    attackerType: attacker.type,
-    attackerOwner: attacker.owner,
-    attackerRoll: atkRoll,
-    attackerTarget: atkStats.attack,
-    attackerHit: atkHit,
-    defenderType: defender.type,
-    defenderOwner: defender.owner,
-    defenderRoll: defRoll,
-    defenderTarget: defStats.defense,
-    defenderHit: defHit,
-    outcome,
-    location: { x: defender.x, y: defender.y },
+    attackerType: attacker.type, attackerOwner: attacker.owner,
+    attackerRoll: atkRoll, attackerTarget: atkStats.attack,
+    attackerDmg: atkDmg, attackerHpLeft: attacker.hp,
+    defenderType: defender.type, defenderOwner: defender.owner,
+    defenderRoll: defRoll, defenderTarget: defStats.defense,
+    defenderDmg: defDmg, defenderHpLeft: defender.hp,
+    outcome, location: { x: defender.x, y: defender.y },
   };
 
-  if (state.roomCode) {
-    io.to(state.roomCode).emit('battleReport', report);
-  }
+  if (state.roomCode) io.to(state.roomCode).emit('battleReport', report);
 
   if (outcome === 'attacker_wins') return attacker;
   if (outcome === 'mutual_kill') return null;
   if (outcome === 'defender_wins') return null;
-  return attacker; // both missed (safety cap) — attacker stays
+  return attacker;
 }
 
 // ── Turn / Production ──────────────────────────────────────────────────────
@@ -554,7 +546,12 @@ function advanceTurn(state) {
   for (const unit of state.units) {
     if (unit.owner === nextPlayer) {
       unit.movesLeft = UNIT_DEFS[unit.type].move;
-      unit.hasAttacked = false; // reset per-turn attack flag
+      unit.hasAttacked = false;
+      // HP regeneration: ceil(maxHp / 3) per turn, capped at maxHp
+      if (unit.hp != null && unit.maxHp != null && unit.hp < unit.maxHp) {
+        const regen = Math.ceil(unit.maxHp / 3);
+        unit.hp = Math.min(unit.maxHp, unit.hp + regen);
+      }
     }
   }
 
@@ -1234,11 +1231,14 @@ function finishAITurn(state) {
   state.turnEnded[2] = false;
   state.aiPending = false;
 
-  // Restore player 1's movement points and reset attack flags
+  // Restore player 1's movement points, reset attack flags, regen HP
   for (const unit of state.units) {
     if (unit.owner === 1) {
       unit.movesLeft = UNIT_DEFS[unit.type].move;
       unit.hasAttacked = false;
+      if (unit.hp != null && unit.maxHp != null && unit.hp < unit.maxHp) {
+        unit.hp = Math.min(unit.maxHp, unit.hp + Math.ceil(unit.maxHp / 3));
+      }
     }
   }
 
@@ -1823,59 +1823,6 @@ io.on('connection', socket => {
     socket.join(code);
     socket.emit('stateUpdate', buildClientState(state, pid));
     console.log(`Player ${pid} rejoined ${code} (screen wake/app resume)`);
-  });
-
-  // ── Bomber AoE strike: attack ALL adjacent enemy hexes simultaneously ─────────
-  socket.on('bomberStrike', ({ roomCode, bomberId }) => {
-    const state = games.get(roomCode);
-    if (!state || state.phase !== 'playing') return;
-    const player = state.players[socket.id];
-    if (!player) return;
-    const pnum = player.id;
-    if (!state.vsComputer && state.activePlayer !== pnum) return;
-
-    const bomber = state.units.find(u => u.id === bomberId && u.owner === pnum && u.type === 'bomber');
-    if (!bomber) return socket.emit('moveError', 'Bomber not found');
-    if (bomber.hasAttacked) return socket.emit('moveError', 'Bomber already attacked this turn');
-
-    const neighbors = hexNeighbors(bomber.x, bomber.y, state.mapW || MAP_W, state.mapH || MAP_H);
-    let hitAny = false;
-    for (const nb of neighbors) {
-      const enemiesHere = state.units.filter(u => u.owner !== pnum && u.x === nb.x && u.y === nb.y);
-      for (const enemy of enemiesHere) {
-        resolveCombat(state, bomber, enemy);
-        hitAny = true;
-        // Check if bomber survived (could be killed by defender counter)
-        if (!state.units.find(u => u.id === bomberId)) {
-          checkWin(state);
-          broadcastState(state);
-          return;
-        }
-      }
-    }
-
-    const stillAlive = state.units.find(u => u.id === bomberId);
-    if (stillAlive) {
-      stillAlive.hasAttacked = true;
-      // Each AoE strike costs 1 fuel
-      if (stillAlive.fuel !== null) {
-        stillAlive.fuel = Math.max(0, stillAlive.fuel - 1);
-        const curTile = state.tiles[stillAlive.y][stillAlive.x];
-        const onCarrier = state.units.some(u => u !== stillAlive && u.owner === pnum && u.type === 'carrier' && u.x === stillAlive.x && u.y === stillAlive.y);
-        const onCity = curTile.type === 'city' && curTile.city && curTile.city.owner === pnum;
-        if (stillAlive.fuel <= 0 && !onCarrier && !onCity) {
-          state.units = state.units.filter(u => u.id !== bomberId);
-          io.to(state.roomCode).emit('battleReport', {
-            attackerType: 'bomber', attackerOwner: pnum,
-            defenderType: null, defenderOwner: null,
-            outcome: 'fuel_crash', location: { x: stillAlive.x, y: stillAlive.y }
-          });
-        }
-      }
-    }
-
-    checkWin(state);
-    broadcastState(state);
   });
 
   // ── Attack adjacent enemy (even with 0 moves left) ────────────────────────

@@ -801,6 +801,8 @@ var gameState = null;
 var selectedUnit = null;
 var selectedCityPos = null;
 var _pendingReselect = null; // unit id to re-select after next stateUpdate
+var UNIT_MOVE_MAX = { army:1, tank:2, fighter:10, bomber:15, submarine:4, destroyer:4, transport:3, carrier:3, battleship:3 };
+var UNIT_MAX_HP   = { army:3, tank:6, fighter:6, bomber:8, submarine:4, destroyer:5, transport:10, carrier:10, battleship:10 };
 var selectedCityScreenPos = null; // screen coords of last city tap
 
 // ── Visual animation state ────────────────────────────────────────────────
@@ -1026,22 +1028,30 @@ function buildBattleEntryHTML(r) {
     var name = type ? capitalize(type) : 'Unit';
     return '<span style="color:' + color + ';font-weight:700">' + name + '</span>';
   }
-  function hitMiss(hit) {
-    return hit
-      ? '<span style="color:#3fb950;font-weight:600"> Hit</span>'
-      : '<span style="color:#8b949e"> Miss</span>';
+  function dmgSpan(dmg) {
+    if (dmg > 0) return '<span style="color:#3fb950;font-weight:600"> hit for ' + dmg + '</span>';
+    return '<span style="color:#8b949e"> missed</span>';
   }
 
   if (r.outcome === 'fuel_crash') {
     return unitLabel(r.attackerType, ac) + ' crashed (out of fuel)';
   }
 
-  var atkPart = unitLabel(r.attackerType, ac) + hitMiss(r.attackerHit);
-  var defPart = r.defenderType ? (unitLabel(r.defenderType, dc) + hitMiss(r.defenderHit)) : '';
+  // New damage-based format: "Tank hit for 3 / Infantry missed"
+  var atkPart = unitLabel(r.attackerType, ac) + dmgSpan(r.attackerDmg);
+  var defPart = r.defenderType ? (unitLabel(r.defenderType, dc) + dmgSpan(r.defenderDmg)) : '';
   var line = atkPart;
   if (defPart) line += ' · ' + defPart;
 
-  // Append destroyed notice
+  // HP remaining (only if both survived)
+  if (r.outcome === 'both_survived') {
+    var hpParts = [];
+    if (r.attackerDmg > 0 && r.defenderHpLeft != null) hpParts.push(unitLabel(r.defenderType, dc) + ' ' + r.defenderHpLeft + 'hp');
+    if (r.defenderDmg > 0 && r.attackerHpLeft != null) hpParts.push(unitLabel(r.attackerType, ac) + ' ' + r.attackerHpLeft + 'hp');
+    if (hpParts.length) line += ' <span style="color:#8b949e">(' + hpParts.join(', ') + ')</span>';
+  }
+
+  // Destroyed notices
   if (r.outcome === 'attacker_wins') {
     line += ' — ' + unitLabel(r.defenderType, dc) + ' <span style="color:#f85149">destroyed</span>';
   } else if (r.outcome === 'defender_wins') {
@@ -2123,6 +2133,21 @@ function drawUnit(ctx, cx, cy, size, unit, stackCount, isSelected) {
     ctx.fillText(stackCount, cx + size * 0.52, cy - size * 0.52);
   }
 
+  // HP bar (above the unit, small colored bar)
+  if (unit.hp != null && unit.maxHp != null && size >= 12) {
+    var hpRatio = unit.hp / unit.maxHp;
+    var barW = size * 1.1;
+    var barH = size * 0.12;
+    var barX = cx - barW / 2;
+    var barY = cy - size * 0.92;
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = '#333';
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.fillStyle = hpRatio > 0.6 ? '#3fb950' : hpRatio > 0.3 ? '#f0a030' : '#f85149';
+    ctx.fillRect(barX, barY, barW * hpRatio, barH);
+    ctx.globalAlpha = 1;
+  }
+
   // Fuel warning (bottom-left, inside strip)
   if (unit.fuel !== null && unit.fuel <= 4 && size >= 14 && isOwn) {
     ctx.globalAlpha = 1;
@@ -2489,35 +2514,23 @@ function updateHUD() {
     var u = state.units.find(function(u2) { return u2.id === selectedUnit.id; });
     if (u) {
       selectedUnit = u;
-      var info = (u.symbol || '') + ' ' + getUnitDisplayName(u.type);
-      info += ' | Moves: ' + u.movesLeft;
-      if (u.fuel !== null) info += ' | Fuel: ' + u.fuel;
-      if (u.cargo && u.cargo.length > 0) info += ' | Cargo: ' + u.cargo.length;
-      var _ud = document.getElementById('unit-details'); if (_ud) _ud.textContent = info;
+      var infoParts = [(u.symbol || '') + ' ' + getUnitDisplayName(u.type)];
+      // HP bar
+      if (u.hp != null && u.maxHp != null) {
+        var hpFrac = u.hp / u.maxHp;
+        var hpColor = hpFrac > 0.6 ? '#3fb950' : hpFrac > 0.3 ? '#f0a030' : '#f85149';
+        infoParts.push('♥ ' + u.hp + '/' + u.maxHp + ' HP');
+      }
+      infoParts.push('👣 ' + u.movesLeft + '/' + (UNIT_MOVE_MAX[u.type] || u.movesLeft));
+      if (u.fuel !== null) infoParts.push('⛽ ' + u.fuel + ' fuel');
+      if (u.cargo && u.cargo.length > 0) infoParts.push('Cargo: ' + u.cargo.length);
+      var _ud = document.getElementById('unit-details'); if (_ud) _ud.textContent = infoParts.join('  |  ');
 
       if (u.type === 'transport' && u.owner === myPlayerNum) {
         updateTransportUI(u, state);
       }
 
-      // Bomber AoE strike button
-      if (u.type === 'bomber' && u.owner === myPlayerNum && !u.hasAttacked) {
-        var adjEnemies = hexNeighbors(u.x, u.y).some(function(nb) {
-          return state.units.some(function(en) { return en.owner !== myPlayerNum && en.x === nb.x && en.y === nb.y; });
-        });
-        if (adjEnemies) {
-          var ta3 = document.getElementById('transport-actions');
-          var btns3 = document.getElementById('transport-btns');
-          ta3.style.display = 'flex';
-          var bb3 = document.createElement('button');
-          bb3.className = 'btn-sm';
-          bb3.textContent = '💣 Bomb All Adjacent';
-          bb3.onclick = function() {
-            socket.emit('bomberStrike', { roomCode: myRoom, bomberId: u.id });
-            _pendingReselect = u.id;
-          };
-          btns3.appendChild(bb3);
-        }
-      }
+      // (Bomber AoE removed — bombers now use standard single-target attack)
 
       // If land unit selected, check for adjacent friendly transports to board
       if (getDomain(u.type) === 'land' && u.owner === myPlayerNum && u.movesLeft > 0) {
