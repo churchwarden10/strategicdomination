@@ -2148,7 +2148,7 @@ function drawIconByType(ctx, type, cx, cy, s) {
 // ── Move Range Highlight ───────────────────────────────────────────────────
 // Helper: draw only the outer boundary edges of a set of hexes in a given color.
 // hexSet is a plain object keyed by 'row,col' with values {col, row}.
-function drawRangeBoundary(hexSet, color, lineWidth) {
+function drawRangeBoundary(hexSet, color, lineWidth, outwardOffset) {
   var size = cam.scale;
   // For each hex in the set, for each of its 6 edges:
   // if the neighbor across that edge is NOT in the set, draw that edge.
@@ -2208,8 +2208,19 @@ function drawRangeBoundary(hexSet, color, lineWidth) {
         // Neighbor is outside the set — this is a boundary edge, draw it
         var p0 = pts[ei];
         var p1 = pts[(ei + 1) % 6];
-        ctx.moveTo(p0.x, p0.y);
-        ctx.lineTo(p1.x, p1.y);
+        if (outwardOffset) {
+          // Push edge outward (away from hex center) by outwardOffset pixels
+          var ex = (p0.x + p1.x) / 2 - cen.x;
+          var ey = (p0.y + p1.y) / 2 - cen.y;
+          var el = Math.sqrt(ex * ex + ey * ey) || 1;
+          var ox = (ex / el) * outwardOffset;
+          var oy = (ey / el) * outwardOffset;
+          ctx.moveTo(p0.x + ox, p0.y + oy);
+          ctx.lineTo(p1.x + ox, p1.y + oy);
+        } else {
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1.x, p1.y);
+        }
       }
     }
   }
@@ -2221,20 +2232,23 @@ function drawMoveRange(su, tiles) {
   var domain = getDomain(su.type);
 
   // For air units: BFS for fuel range, then draw outer boundary in yellow
+  var fuelReachable = {};
   if (domain === 'air' && su.fuel !== null && su.fuel > 0) {
-    var fuelReachable = {};
     var fuelVisited = {};
     var fuelQueue = [{ col: su.x, row: su.y, dist: 0 }];
     fuelVisited[su.y + ',' + su.x] = true;
-    // Include origin so boundary calc works correctly
     fuelReachable[su.y + ',' + su.x] = { col: su.x, row: su.y };
     while (fuelQueue.length) {
       var fc = fuelQueue.shift();
       if (fc.dist > 0) fuelReachable[fc.row + ',' + fc.col] = { col: fc.col, row: fc.row };
       if (fc.dist >= su.fuel) continue;
+      // hexNeighbors already clamps to MAP_W/MAP_H so no out-of-bounds tiles enter the set
       var fnbs = hexNeighbors(fc.col, fc.row);
       for (var fi = 0; fi < fnbs.length; fi++) {
         var fnb = fnbs[fi];
+        // Only include tiles that exist on the map (non-void)
+        var fnTile = tiles[fnb.y] && tiles[fnb.y][fnb.x];
+        if (!fnTile || fnTile.type === 'void') continue;
         var fnk = fnb.y + ',' + fnb.x;
         if (!fuelVisited[fnk]) {
           fuelVisited[fnk] = true;
@@ -2242,7 +2256,9 @@ function drawMoveRange(su, tiles) {
         }
       }
     }
-    drawRangeBoundary(fuelReachable, 'rgba(255,220,0,0.85)', 2.5);
+    // Draw fuel ring. If fuel === movesLeft the rings would overlap — offset fuel ring outward.
+    var fuelSameAsMove = (su.fuel === su.movesLeft);
+    drawRangeBoundary(fuelReachable, 'rgba(255,220,0,0.85)', 2.5, fuelSameAsMove ? 4 : 0);
   }
 
   // BFS up to movesLeft hex distance - collect reachable tiles
