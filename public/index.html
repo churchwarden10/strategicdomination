@@ -1009,18 +1009,21 @@ function initCanvas() {
     if (!myRoom) return;
     var roomSnap = myRoom;
     var nameSnap = myName;
+    var numSnap = myPlayerNum;
+    showToast('Reconnecting…');
     // Tear down cleanly then reconnect
     try { socket.disconnect(); } catch(e) {}
     setTimeout(function() {
       try { socket.connect(); } catch(e) {}
-      // Wait for connection, with a fallback retry
       var attempts = 0;
       function tryRejoin() {
         if (socket.connected) {
-          socket.emit('rejoinGame', { roomCode: roomSnap, name: nameSnap });
-        } else if (attempts < 8) {
+          socket.emit('rejoinGame', { roomCode: roomSnap, name: nameSnap, playerNum: numSnap });
+        } else if (attempts < 10) {
           attempts++;
           setTimeout(tryRejoin, 500);
+        } else {
+          showToast('Connection lost — reload to resume');
         }
       }
       setTimeout(tryRejoin, 400);

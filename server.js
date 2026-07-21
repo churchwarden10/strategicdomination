@@ -1709,27 +1709,33 @@ io.on('connection', socket => {
 
   // iOS/mobile: browser drops WebSocket when screen locks or app backgrounds.
   // On resume, client calls rejoinGame to re-associate this socket and get fresh state.
-  socket.on('rejoinGame', ({ roomCode, name }) => {
+  socket.on('rejoinGame', ({ roomCode, name, playerNum }) => {
     const code = (roomCode || '').toUpperCase().trim();
     const state = games.get(code);
     if (!state) return;
 
-    // Find which player this socket previously was by name
+    // Match by playerNum first (most reliable), then fall back to name
     let pid = null;
-    for (const [, p] of Object.entries(state.playerSockets)) {
-      // Also check by name in state.players entries
+    if (playerNum && (playerNum === 1 || playerNum === 2)) {
+      pid = playerNum;
+    } else {
+      for (const [, p] of Object.entries(state.players)) {
+        if (p.name === name) { pid = p.id; break; }
+      }
     }
-    // Match by name across all registered players
-    for (const [sid, p] of Object.entries(state.players)) {
-      if (p.name === name) { pid = p.id; break; }
-    }
-    if (!pid) return; // unknown player, ignore
+    if (!pid) return;
 
-    // Re-register this socket for that player number
+    // Re-register socket — update players map with new socket id
+    const oldEntry = Object.entries(state.players).find(([, p]) => p.id === pid);
+    if (oldEntry) {
+      const [oldSid, playerData] = oldEntry;
+      delete state.players[oldSid];
+      state.players[socket.id] = playerData;
+    } else {
+      state.players[socket.id] = { id: pid, name: name || ('Player ' + pid) };
+    }
     state.playerSockets[pid] = socket;
-    // Re-add to socket.io room so broadcasts reach this socket
     socket.join(code);
-    // Send current state so the client can resume
     socket.emit('stateUpdate', buildClientState(state, pid));
     console.log(`Player ${pid} rejoined ${code} (screen wake/app resume)`);
   });
