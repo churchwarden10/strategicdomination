@@ -999,6 +999,11 @@ socket.on('boardingOpportunity', function(data) {
 
 socket.on('error', function(msg) { showToast(msg); });
 socket.on('moveError', function(msg) { showToast(msg); });
+socket.on('moveBlocked', function(data) {
+  // Unit stopped mid-path (fog enemy or terrain) — keep it selected so player can act immediately
+  _pendingReselect = data.unitId;
+  if (data.reason === 'fog_enemy') showToast('Enemy spotted — tap to attack');
+});
 socket.on('opponentDisconnected', function() { showToast('Opponent disconnected'); });
 
 // ── Battle Log ─────────────────────────────────────────────────────────────────
@@ -2494,6 +2499,26 @@ function updateHUD() {
         updateTransportUI(u, state);
       }
 
+      // Bomber AoE strike button
+      if (u.type === 'bomber' && u.owner === myPlayerNum && !u.hasAttacked) {
+        var adjEnemies = hexNeighbors(u.x, u.y).some(function(nb) {
+          return state.units.some(function(en) { return en.owner !== myPlayerNum && en.x === nb.x && en.y === nb.y; });
+        });
+        if (adjEnemies) {
+          var ta3 = document.getElementById('transport-actions');
+          var btns3 = document.getElementById('transport-btns');
+          ta3.style.display = 'flex';
+          var bb3 = document.createElement('button');
+          bb3.className = 'btn-sm';
+          bb3.textContent = '💣 Bomb All Adjacent';
+          bb3.onclick = function() {
+            socket.emit('bomberStrike', { roomCode: myRoom, bomberId: u.id });
+            _pendingReselect = u.id;
+          };
+          btns3.appendChild(bb3);
+        }
+      }
+
       // If land unit selected, check for adjacent friendly transports to board
       if (getDomain(u.type) === 'land' && u.owner === myPlayerNum && u.movesLeft > 0) {
         var nbs = hexNeighbors(u.x, u.y);
@@ -2973,7 +2998,7 @@ function onCanvasTap(sx, sy) {
       var tapDist = hexDistance(su.x, su.y, tx, ty);
       if (tapDist === 1 && su.movesLeft === 0) {
         socket.emit('attackUnit', { roomCode: myRoom, attackerId: su.id, defenderX: tx, defenderY: ty });
-        clearSelection();
+        _pendingReselect = su.id; // keep selected after attack
         return;
       }
     }

@@ -1545,11 +1545,28 @@ io.on('connection', socket => {
         if (!step) break;
         const stepTile = state.tiles[step.y][step.x];
         if (stepTile.type === 'void') break;
-        if (!checkMoveDomain(def.domain, stepTile.type, stepTile)) break;
+
+        // Fog-of-war stop: if this tile is unexplored and impassable, stop without attacking
+        const explored = state.exploredTiles && state.exploredTiles[pnum];
+        const tileExplored = !explored || explored.has(step.y * mapW + step.x);
+        if (!checkMoveDomain(def.domain, stepTile.type, stepTile)) {
+          // Hit impassable terrain — stop here without consuming moves, keep unit where it is
+          broadcastState(state);
+          socket.emit('moveBlocked', { unitId, stoppedAt: { x: current.x, y: current.y }, reason: 'terrain' });
+          return;
+        }
 
         // Check stacking at each intermediate step
         const stepEnemies = state.units.filter(u => u.owner !== pnum && u.x === step.x && u.y === step.y);
         if (stepEnemies.length === 0 && getTileUnitCount(state, step.x, step.y) >= 2) break;
+
+        // Fog-of-war enemy encounter: if tile was unexplored, stop WITHOUT attacking — player must confirm
+        if (stepEnemies.length > 0 && !tileExplored) {
+          // Move unit to the tile just before the enemy, keep selected
+          broadcastState(state);
+          socket.emit('moveBlocked', { unitId, stoppedAt: { x: current.x, y: current.y }, reason: 'fog_enemy' });
+          return;
+        }
 
         const enemies = state.units.filter(u => u.owner !== pnum && u.x === step.x && u.y === step.y);
         let unitSurvived = true;
@@ -1806,6 +1823,59 @@ io.on('connection', socket => {
     socket.join(code);
     socket.emit('stateUpdate', buildClientState(state, pid));
     console.log(`Player ${pid} rejoined ${code} (screen wake/app resume)`);
+  });
+
+  // ── Bomber AoE strike: attack ALL adjacent enemy hexes simultaneously ─────────
+  socket.on('bomberStrike', ({ roomCode, bomberId }) => {
+    const state = games.get(roomCode);
+    if (!state || state.phase !== 'playing') return;
+    const player = state.players[socket.id];
+    if (!player) return;
+    const pnum = player.id;
+    if (!state.vsComputer && state.activePlayer !== pnum) return;
+
+    const bomber = state.units.find(u => u.id === bomberId && u.owner === pnum && u.type === 'bomber');
+    if (!bomber) return socket.emit('moveError', 'Bomber not found');
+    if (bomber.hasAttacked) return socket.emit('moveError', 'Bomber already attacked this turn');
+
+    const neighbors = hexNeighbors(bomber.x, bomber.y, state.mapW || MAP_W, state.mapH || MAP_H);
+    let hitAny = false;
+    for (const nb of neighbors) {
+      const enemiesHere = state.units.filter(u => u.owner !== pnum && u.x === nb.x && u.y === nb.y);
+      for (const enemy of enemiesHere) {
+        resolveCombat(state, bomber, enemy);
+        hitAny = true;
+        // Check if bomber survived (could be killed by defender counter)
+        if (!state.units.find(u => u.id === bomberId)) {
+          checkWin(state);
+          broadcastState(state);
+          return;
+        }
+      }
+    }
+
+    const stillAlive = state.units.find(u => u.id === bomberId);
+    if (stillAlive) {
+      stillAlive.hasAttacked = true;
+      // Each AoE strike costs 1 fuel
+      if (stillAlive.fuel !== null) {
+        stillAlive.fuel = Math.max(0, stillAlive.fuel - 1);
+        const curTile = state.tiles[stillAlive.y][stillAlive.x];
+        const onCarrier = state.units.some(u => u !== stillAlive && u.owner === pnum && u.type === 'carrier' && u.x === stillAlive.x && u.y === stillAlive.y);
+        const onCity = curTile.type === 'city' && curTile.city && curTile.city.owner === pnum;
+        if (stillAlive.fuel <= 0 && !onCarrier && !onCity) {
+          state.units = state.units.filter(u => u.id !== bomberId);
+          io.to(state.roomCode).emit('battleReport', {
+            attackerType: 'bomber', attackerOwner: pnum,
+            defenderType: null, defenderOwner: null,
+            outcome: 'fuel_crash', location: { x: stillAlive.x, y: stillAlive.y }
+          });
+        }
+      }
+    }
+
+    checkWin(state);
+    broadcastState(state);
   });
 
   // ── Attack adjacent enemy (even with 0 moves left) ────────────────────────
