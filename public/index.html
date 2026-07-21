@@ -1293,7 +1293,7 @@ function stopAnimLoop() {
 function render() {
   if (!canvas || !ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = '#0d1117';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (!gameState) return;
 
@@ -1394,8 +1394,8 @@ function render() {
 function drawHex(ctx, cx, cy, size, tile, col, row, now) {
   // Void tiles: draw nothing at all — pure background, completely invisible
   if (tile.type === 'void') {
-    // Fill a slightly oversized rect to cover any anti-aliasing bleed from neighbors
-    ctx.fillStyle = COLORS.void;
+    // Pure black — blends into page background
+    ctx.fillStyle = '#0d1117';
     ctx.fillRect(cx - size - 1, cy - size - 1, (size + 1) * 2, (size + 1) * 2);
     return;
   }
