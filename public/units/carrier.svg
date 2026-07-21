@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Water shadow -->
+  <ellipse cx="32" cy="60" rx="28" ry="5" fill="rgba(0,0,50,0.35)"/>
+  <!-- Wake lines -->
+  <ellipse cx="4" cy="50" rx="6" ry="2" fill="#4a7090" opacity="0.3"/>
+  <ellipse cx="60" cy="50" rx="6" ry="2" fill="#4a7090" opacity="0.3"/>
+  <!-- Hull bottom -->
+  <polygon points="6,50 58,50 56,56 8,56" fill="#1e2430"/>
+  <!-- Hull right face -->
+  <polygon points="58,42 62,46 58,50 54,46" fill="#2a3040"/>
+  <!-- Hull left face -->
+  <polygon points="6,42 2,46 6,50 10,46" fill="#3a4050"/>
+  <!-- Flight deck - main surface (wide, flat) -->
+  <polygon points="4,30 60,30 62,42 2,42" fill="#5a6070"/>
+  <!-- Flight deck right edge overhang -->
+  <polygon points="60,30 64,32 64,44 62,42" fill="#3a4050"/>
+  <!-- Flight deck left edge -->
+  <polygon points="4,30 2,32 2,44 4,42" fill="#4a5060"/>
+  <!-- Deck markings - centerline -->
+  <line x1="8" y1="36" x2="56" y2="36" stroke="#8a9080" stroke-width="0.5" stroke-dasharray="3,2"/>
+  <!-- Deck markings - landing stripe -->
+  <polygon points="20,30 44,30 42,42 18,42" fill="#6a7080" opacity="0.4"/>
+  <!-- Deck markings - yellow lines -->
+  <line x1="12" y1="30" x2="12" y2="42" stroke="#c8b040" stroke-width="0.8" opacity="0.6"/>
+  <line x1="52" y1="30" x2="52" y2="42" stroke="#c8b040" stroke-width="0.8" opacity="0.6"/>
+  <!-- Deck numbers -->
+  <rect x="24" y="32" width="8" height="5" rx="0.5" fill="#f0f0e0" opacity="0.15"/>
+  <!-- Island superstructure (right side) -->
+  <rect x="48" y="18" width="12" height="14" rx="1" fill="#6a7080"/>
+  <!-- Island left shadow -->
+  <rect x="48" y="18" width="3" height="14" fill="#4a5060"/>
+  <!-- Island top -->
+  <rect x="48" y="14" width="12" height="6" rx="1" fill="#7a8090"/>
+  <!-- Radar/mast on island -->
+  <line x1="54" y1="6" x2="54" y2="14" stroke="#3a4050" stroke-width="1.5"/>
+  <ellipse cx="54" cy="7" rx="5" ry="2" fill="#3a4050"/>
+  <!-- Funnel on island -->
+  <rect x="50" y="12" width="4" height="8" rx="1" fill="#4a5060"/>
+  <!-- Island bridge windows -->
+  <rect x="50" y="19" width="3" height="2" rx="0.5" fill="#4a7090" opacity="0.7"/>
+  <rect x="54" y="19" width="3" height="2" rx="0.5" fill="#4a7090" opacity="0.7"/>
+  <!-- Parked planes on deck (small silhouettes) -->
+  <!-- Plane 1 -->
+  <polygon points="10,33 18,33 16,35 12,35" fill="#3a4050"/>
+  <line x1="14" y1="33" x2="14" y2="36" stroke="#2a3040" stroke-width="0.8"/>
+  <!-- Plane 2 -->
+  <polygon points="20,38 28,38 26,40 22,40" fill="#3a4050"/>
+  <line x1="24" y1="38" x2="24" y2="41" stroke="#2a3040" stroke-width="0.8"/>
+  <!-- Plane 3 -->
+  <polygon points="30,33 38,33 36,35 32,35" fill="#3a4050"/>
+  <line x1="34" y1="33" x2="34" y2="36" stroke="#2a3040" stroke-width="0.8"/>
+  <!-- Anti-aircraft guns on edges -->
+  <ellipse cx="8" cy="32" rx="2" ry="1.5" fill="#4a5060"/>
+  <rect x="6" y="30" width="1" height="4" rx="0.5" fill="#3a4050"/>
+  <ellipse cx="8" cy="41" rx="2" ry="1.5" fill="#4a5060"/>
+  <rect x="6" y="39" width="1" height="4" rx="0.5" fill="#3a4050"/>
+  <!-- Bow wave -->
+  <polygon points="60,42 64,46 62,48" fill="#7090b0" opacity="0.4"/>
+</svg>

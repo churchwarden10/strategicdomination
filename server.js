@@ -562,11 +562,23 @@ function checkWin(state) {
     state.winner = 1;
     state.phase = 'ended';
     clearTimeout(state.turnTimer);
+    scheduleGameCleanup(state);
   } else if (p1Cities === 0 && p1Units === 0) {
     state.winner = 2;
     state.phase = 'ended';
     clearTimeout(state.turnTimer);
+    scheduleGameCleanup(state);
   }
+}
+
+function scheduleGameCleanup(state) {
+  // Remove ended games from memory after 5 minutes so they don't accumulate
+  setTimeout(() => {
+    if (state.phase === 'ended') {
+      games.delete(state.roomCode);
+      console.log('Game cleaned up:', state.roomCode);
+    }
+  }, 5 * 60 * 1000);
 }
 
 function countCities(state, player) {
@@ -1073,31 +1085,7 @@ function runAILevel3(state) {
   }
 
   // ── Wrap up AI turn ──
-  clearTimeout(state.turnTimer);
-  state.turn++;
-  state.activePlayer = 1;
-  state.turnEnded[1] = false;
-  state.turnEnded[2] = false;
-  state.aiPending = false;
-  for (const unit of state.units) {
-    if (unit.owner === 1) unit.movesLeft = UNIT_DEFS[unit.type].move;
-  }
-  for (let y = 0; y < mapH; y++) {
-    for (let x = 0; x < mapW; x++) {
-      const tile = state.tiles[y][x];
-      if (tile.type !== 'city' || !tile.city) continue;
-      const city = tile.city;
-      if (!city.owner || !city.production) continue;
-      city.progress++;
-      const buildTime = UNIT_DEFS[city.production] ? UNIT_DEFS[city.production].buildTime : 99;
-      if (city.progress >= buildTime) {
-        const spawned = spawnUnit(state, city.owner, city.production, x, y);
-        if (spawned) city.progress = 0;
-      }
-    }
-  }
-  checkWin(state);
-  broadcastToPlayer(state, 1);
+  finishAITurn(state);
 }
 
 // ── AI BFS Pathfinding ────────────────────────────────────────────────
@@ -1185,315 +1173,28 @@ function findNearestCoastalLand(state, fromX, fromY) {
   return best;
 }
 
-// ── AI (computer player 2) ────────────────────────────────────────────────
-function scheduleAI(state) {
-  if (state.aiPending) return;
-  state.aiPending = true;
-  setTimeout(() => {
-    state.aiPending = false;
-    runAILevel3(state);
-  }, 800);
-}
-
-function runAI(state) {
+// ── AI Turn Wrap-up ──────────────────────────────────────────────────────
+// Shared by all AI implementations: restore P1 moves, run production tick,
+// check win condition, then send the updated state to player 1.
+function finishAITurn(state) {
   const mapW = state.mapW || MAP_W;
   const mapH = state.mapH || MAP_H;
 
-  if (state.phase !== 'playing') return;
-  if (!state.vsComputer) return;
-
-  // ── Gather situation awareness ──
-  const aiUnits = state.units.filter(u => u.owner === 2);
-  const enemyUnits = state.units.filter(u => u.owner === 1);
-
-  // Find all cities by category
-  const neutralCities = [];
-  const friendlyCities = [];
-  const enemyCities = [];
-  for (let y = 0; y < mapH; y++) {
-    for (let x = 0; x < mapW; x++) {
-      const tile = state.tiles[y][x];
-      if (tile.type !== 'city' || !tile.city) continue;
-      const pos = { x, y, city: tile.city };
-      if (!tile.city.owner || tile.city.owner === 0) neutralCities.push(pos);
-      else if (tile.city.owner === 2) friendlyCities.push(pos);
-      else enemyCities.push(pos);
-    }
-  }
-
-  // ── AI Production: set production on idle cities ──
-  const aiHasFighter = aiUnits.some(u => u.type === 'fighter');
-  const aiHasCarrier = aiUnits.some(u => u.type === 'carrier');
-
-  for (const cp of friendlyCities) {
-    const tile = state.tiles[cp.y][cp.x];
-    if (!tile.city.production) {
-      const isCoastal = tile.city.coastal;
-      // Check if enemy is close
-      let enemyClose = false;
-      for (const eu of enemyUnits) {
-        if (hexDistance(cp.x, cp.y, eu.x, eu.y) < 8) { enemyClose = true; break; }
-      }
-
-      let prod;
-      if (aiHasCarrier && !aiHasFighter) {
-        prod = 'fighter';
-      } else if (isCoastal) {
-        prod = Math.random() < 0.33 ? 'destroyer' : (Math.random() < 0.5 ? 'battleship' : 'transport');
-      } else if (!isCoastal && enemyClose) {
-        prod = 'tank';
-      } else {
-        prod = 'army';
-      }
-
-      tile.city.production = prod;
-      tile.city.progress = 0;
-    }
-  }
-
-  // Track which units we've already moved this turn
-  const movedIds = new Set();
-
-  // ── Priority 1: Land units capture neutral cities ──
-  const landUnits = aiUnits.filter(u => {
-    const def = UNIT_DEFS[u.type];
-    return def.domain === 'land' && u.movesLeft > 0 && def.canCapture;
-  });
-
-  for (const nc of neutralCities) {
-    if (landUnits.length === 0) break;
-    // Find closest available land unit
-    let bestUnit = null, bestDist = Infinity;
-    for (const u of landUnits) {
-      if (movedIds.has(u.id)) continue;
-      const d = hexDistance(u.x, u.y, nc.x, nc.y);
-      if (d < bestDist) { bestDist = d; bestUnit = u; }
-    }
-    if (bestUnit) {
-      const def = UNIT_DEFS[bestUnit.type];
-      const step = aiBFS(state, bestUnit.x, bestUnit.y, nc.x, nc.y, def.domain);
-      if (step) {
-        doMove(state, bestUnit, step.x, step.y);
-        movedIds.add(bestUnit.id);
-        bestUnit.movesLeft = Math.max(0, bestUnit.movesLeft);
-      }
-    }
-  }
-
-  // ── Priority 2: Defend owned cities with no friendly unit on them ──
-  for (const fc of friendlyCities) {
-    const onCity = state.units.filter(u => u.owner === 2 && u.x === fc.x && u.y === fc.y);
-    if (onCity.length > 0) continue; // already defended
-
-    // Find nearest available land unit not already committed
-    let bestUnit = null, bestDist = Infinity;
-    for (const u of state.units) {
-      if (u.owner !== 2 || movedIds.has(u.id)) continue;
-      if (u.movesLeft <= 0) continue;
-      const def = UNIT_DEFS[u.type];
-      if (def.domain !== 'land') continue;
-      const d = hexDistance(u.x, u.y, fc.x, fc.y);
-      if (d < bestDist) { bestDist = d; bestUnit = u; }
-    }
-    if (bestUnit && bestDist > 0) {
-      const def = UNIT_DEFS[bestUnit.type];
-      const step = aiBFS(state, bestUnit.x, bestUnit.y, fc.x, fc.y, def.domain);
-      if (step) {
-        doMove(state, bestUnit, step.x, step.y);
-        movedIds.add(bestUnit.id);
-      }
-    }
-  }
-
-  // ── Priority 3: Naval transport strategy ──
-  // Find AI transports with empty cargo
-  const aiTransports = state.units.filter(u => u.owner === 2 && u.type === 'transport' && u.movesLeft > 0);
-  for (const transport of aiTransports) {
-    if (movedIds.has(transport.id)) continue;
-
-    if (transport.cargo && transport.cargo.length === 0) {
-      // Look for stranded land units: AI land units on an island with no land path to enemy city
-      let strandedUnit = null;
-      for (const lu of state.units) {
-        if (lu.owner !== 2 || movedIds.has(lu.id)) continue;
-        const def = UNIT_DEFS[lu.type];
-        if (def.domain !== 'land') continue;
-        // Check if this unit has a land path to any enemy city
-        let hasPath = false;
-        for (const ec of enemyCities) {
-          if (onSameLandmass(state, lu.x, lu.y, ec.x, ec.y)) { hasPath = true; break; }
-        }
-        if (!hasPath && enemyCities.length > 0) { strandedUnit = lu; break; }
-      }
-      if (strandedUnit) {
-        // Move transport toward stranded unit
-        const step = aiBFS(state, transport.x, transport.y, strandedUnit.x, strandedUnit.y, 'sea');
-        if (step) {
-          doMove(state, transport, step.x, step.y);
-          movedIds.add(transport.id);
-          // If adjacent, attempt load
-          const nbs = hexNeighbors(transport.x, transport.y, mapW, mapH);
-          const isAdj = nbs.some(n => n.x === strandedUnit.x && n.y === strandedUnit.y);
-          const onSame = transport.x === strandedUnit.x && transport.y === strandedUnit.y;
-          const transportCap2 = UNIT_DEFS['transport'].capacity;
-          if ((isAdj || onSame) && getTransportUsedSlots(transport) < transportCap2) {
-            const unitDef = UNIT_DEFS[strandedUnit.type];
-            const slots = unitDef ? (unitDef.slots || 1) : 1;
-            if (getTransportUsedSlots(transport) + slots <= transportCap2) {
-              if (isAdj) {
-                strandedUnit.x = transport.x;
-                strandedUnit.y = transport.y;
-                strandedUnit.movesLeft = Math.max(0, strandedUnit.movesLeft - 1);
-              }
-              state.units = state.units.filter(u => u.id !== strandedUnit.id);
-              transport.cargo.push({ ...strandedUnit });
-              movedIds.add(strandedUnit.id);
-            }
-          }
-        }
-      }
-    } else if (transport.cargo && transport.cargo.length > 0) {
-      // Transport has cargo - move toward enemy coast and unload
-      const target = enemyCities.length > 0
-        ? enemyCities[0]
-        : findNearestCoastalLand(state, transport.x, transport.y);
-      if (target) {
-        const step = aiBFS(state, transport.x, transport.y, target.x, target.y, 'sea');
-        if (step) {
-          doMove(state, transport, step.x, step.y);
-          movedIds.add(transport.id);
-        }
-        // Check for adjacent land tiles to unload onto
-        const nbs = hexNeighbors(transport.x, transport.y, mapW, mapH);
-        const landNbs = nbs.filter(nb => {
-          const t = state.tiles[nb.y][nb.x];
-          return t && (t.type === 'land' || t.type === 'city') && getTileUnitCount(state, nb.x, nb.y) < 2;
-        });
-        if (landNbs.length > 0 && transport.cargo.length > 0) {
-          const unloadTo = landNbs[0];
-          const cargo = transport.cargo.splice(0, 1)[0];
-          cargo.x = unloadTo.x;
-          cargo.y = unloadTo.y;
-          cargo.movesLeft = UNIT_DEFS[cargo.type] ? UNIT_DEFS[cargo.type].move : 1;
-          cargo.id = newUid();
-          state.units.push(cargo);
-        }
-      }
-    }
-  }
-
-  // ── Priority 4: Air units (fighters/bombers) attack nearest enemy unit ──
-  for (const unit of state.units) {
-    if (unit.owner !== 2 || movedIds.has(unit.id) || unit.movesLeft <= 0) continue;
-    const def = UNIT_DEFS[unit.type];
-    if (def.domain !== 'air') continue;
-
-    const enemy = findNearestUnit(state, unit, 1);
-    if (enemy) {
-      const step = aiBFS(state, unit.x, unit.y, enemy.x, enemy.y, 'air');
-      if (step) {
-        doMove(state, unit, step.x, step.y);
-        movedIds.add(unit.id);
-      }
-    } else {
-      // Move toward enemy city
-      if (enemyCities.length > 0) {
-        let best = null, bestD = Infinity;
-        for (const ec of enemyCities) {
-          const d = hexDistance(unit.x, unit.y, ec.x, ec.y);
-          if (d < bestD) { bestD = d; best = ec; }
-        }
-        if (best) {
-          const step = aiBFS(state, unit.x, unit.y, best.x, best.y, 'air');
-          if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); }
-        }
-      }
-    }
-  }
-
-  // ── Priority 5: Sea units attack enemy units/cities ──
-  for (const unit of state.units) {
-    if (unit.owner !== 2 || movedIds.has(unit.id) || unit.movesLeft <= 0) continue;
-    const def = UNIT_DEFS[unit.type];
-    if (def.domain !== 'sea') continue;
-
-    // Find nearest enemy naval unit or enemy coastal city
-    const enemyNaval = findNearestUnit(state, unit, 1);
-    let target = null;
-    if (enemyNaval) {
-      const enDef = UNIT_DEFS[enemyNaval.type];
-      if (enDef && enDef.domain === 'sea') target = { x: enemyNaval.x, y: enemyNaval.y };
-    }
-    if (!target && enemyCities.length > 0) {
-      target = findNearestCity(state, unit, [1]);
-    }
-    if (target) {
-      const step = aiBFS(state, unit.x, unit.y, target.x, target.y, 'sea');
-      if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); }
-    } else {
-      const moves = getValidMoves(state, unit, def);
-      if (moves.length > 0) {
-        const m = moves[Math.floor(Math.random() * moves.length)];
-        doMove(state, unit, m.x, m.y);
-        movedIds.add(unit.id);
-      }
-    }
-  }
-
-  // ── Priority 6: Remaining land units move toward enemy cities ──
-  for (const unit of state.units) {
-    if (unit.owner !== 2 || movedIds.has(unit.id) || unit.movesLeft <= 0) continue;
-    const def = UNIT_DEFS[unit.type];
-    if (def.domain !== 'land') continue;
-
-    // Target: enemy city first, then neutral city
-    let target = null;
-    if (enemyCities.length > 0) {
-      let best = null, bestD = Infinity;
-      for (const ec of enemyCities) {
-        const d = hexDistance(unit.x, unit.y, ec.x, ec.y);
-        if (d < bestD) { bestD = d; best = ec; }
-      }
-      target = best;
-    } else if (neutralCities.length > 0) {
-      let best = null, bestD = Infinity;
-      for (const nc of neutralCities) {
-        const d = hexDistance(unit.x, unit.y, nc.x, nc.y);
-        if (d < bestD) { bestD = d; best = nc; }
-      }
-      target = best;
-    }
-
-    if (target) {
-      const step = aiBFS(state, unit.x, unit.y, target.x, target.y, def.domain);
-      if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); }
-    } else {
-      // Random valid move as fallback
-      const moves = getValidMoves(state, unit, def);
-      if (moves.length > 0) {
-        const m = moves[Math.floor(Math.random() * moves.length)];
-        doMove(state, unit, m.x, m.y);
-        movedIds.add(unit.id);
-      }
-    }
-  }
-
-  // ── Wrap up AI turn ──
   clearTimeout(state.turnTimer);
   state.turn++;
   state.activePlayer = 1;
   state.turnEnded[1] = false;
   state.turnEnded[2] = false;
   state.aiPending = false;
+
   // Restore player 1's movement points
   for (const unit of state.units) {
     if (unit.owner === 1) unit.movesLeft = UNIT_DEFS[unit.type].move;
   }
-  // Run production tick (same logic as advanceTurn)
-  const mapW2 = state.mapW || MAP_W;
-  const mapH2 = state.mapH || MAP_H;
-  for (let y = 0; y < mapH2; y++) {
-    for (let x = 0; x < mapW2; x++) {
+
+  // Production tick for all cities
+  for (let y = 0; y < mapH; y++) {
+    for (let x = 0; x < mapW; x++) {
       const tile = state.tiles[y][x];
       if (tile.type !== 'city' || !tile.city) continue;
       const city = tile.city;
@@ -1506,8 +1207,19 @@ function runAI(state) {
       }
     }
   }
+
   checkWin(state);
   broadcastToPlayer(state, 1);
+}
+
+// ── AI (computer player 2) ────────────────────────────────────────────────
+function scheduleAI(state) {
+  if (state.aiPending) return;
+  state.aiPending = true;
+  setTimeout(() => {
+    state.aiPending = false;
+    runAILevel3(state);
+  }, 800);
 }
 
 function broadcastToPlayer(state, pid) {

@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!--
+    B-17 Flying Fortress — top-down view, nose pointing UP
+    Key silhouette features:
+    - Wide, rectangular wings (NOT swept)
+    - 4 engines in nacelles along wings
+    - Fat, rounded fuselage
+    - Large twin tail fins (distinctive B-17 shape)
+    - Chin turret at nose
+    - Waist gunner blisters on fuselage sides
+  -->
+
+  <!-- Drop shadow -->
+  <ellipse cx="32" cy="59" rx="26" ry="4" fill="rgba(0,0,0,0.28)"/>
+
+  <!-- === WINGS — wide rectangular B-17 style === -->
+  <!-- Left wing — straight leading/trailing edges -->
+  <polygon points="29,26 2,22 2,30 28,36" fill="#5a6838"/>
+  <!-- Right wing -->
+  <polygon points="35,26 62,22 62,30 36,36" fill="#4e5c30"/>
+  <!-- Wing top highlights -->
+  <polygon points="29,26 4,23 4,25 29,28" fill="#7a8a50" opacity="0.5"/>
+  <polygon points="35,26 60,23 60,25 35,28" fill="#7a8a50" opacity="0.35"/>
+
+  <!-- === 4 ENGINE NACELLES === -->
+  <!-- Left outer engine -->
+  <ellipse cx="10" cy="26" rx="4.5" ry="2.5" fill="#3a4220"/>
+  <ellipse cx="10" cy="26" rx="2.8" ry="1.5" fill="#1e2412"/>
+  <!-- Left outer prop -->
+  <line x1="10" y1="22" x2="10" y2="30" stroke="#151a0a" stroke-width="2.5"/>
+  <line x1="6"  y1="26" x2="14" y2="26" stroke="#151a0a" stroke-width="2.5"/>
+
+  <!-- Left inner engine -->
+  <ellipse cx="20" cy="28" rx="4"   ry="2.2" fill="#3a4220"/>
+  <ellipse cx="20" cy="28" rx="2.5" ry="1.3" fill="#1e2412"/>
+  <line x1="20" y1="24" x2="20" y2="32" stroke="#151a0a" stroke-width="2.5"/>
+  <line x1="16" y1="28" x2="24" y2="28" stroke="#151a0a" stroke-width="2.5"/>
+
+  <!-- Right inner engine -->
+  <ellipse cx="44" cy="28" rx="4"   ry="2.2" fill="#3a4220"/>
+  <ellipse cx="44" cy="28" rx="2.5" ry="1.3" fill="#1e2412"/>
+  <line x1="44" y1="24" x2="44" y2="32" stroke="#151a0a" stroke-width="2.5"/>
+  <line x1="40" y1="28" x2="48" y2="28" stroke="#151a0a" stroke-width="2.5"/>
+
+  <!-- Right outer engine -->
+  <ellipse cx="54" cy="26" rx="4.5" ry="2.5" fill="#3a4220"/>
+  <ellipse cx="54" cy="26" rx="2.8" ry="1.5" fill="#1e2412"/>
+  <line x1="54" y1="22" x2="54" y2="30" stroke="#151a0a" stroke-width="2.5"/>
+  <line x1="50" y1="26" x2="58" y2="26" stroke="#151a0a" stroke-width="2.5"/>
+
+  <!-- === FUSELAGE — wide, round-bellied === -->
+  <!-- Main body -->
+  <polygon points="28,7 36,7 39,30 39,52 32,57 25,52 25,30" fill="#6a7840"/>
+  <!-- Left fuselage shade -->
+  <polygon points="25,10 22,14 22,52 25,52" fill="#4a5428"/>
+  <!-- Right highlight -->
+  <polygon points="36,7 39,10 39,16 36,10" fill="#8a9850"/>
+
+  <!-- === NOSE — rounded, plexiglass chin turret === -->
+  <ellipse cx="32" cy="8" rx="6" ry="5" fill="#4a7090" opacity="0.9"/>
+  <ellipse cx="32" cy="8" rx="4" ry="3" fill="#6090b0" opacity="0.6"/>
+  <!-- Chin turret guns -->
+  <line x1="30" y1="4" x2="30" y2="8" stroke="#2a2a1a" stroke-width="1.5"/>
+  <line x1="34" y1="4" x2="34" y2="8" stroke="#2a2a1a" stroke-width="1.5"/>
+
+  <!-- === TWIN TAIL FINS (very distinctive B-17) === -->
+  <!-- Left fin -->
+  <polygon points="25,50 20,52 18,57 24,55 26,52" fill="#4a5428"/>
+  <!-- Right fin -->
+  <polygon points="39,50 44,52 46,57 40,55 38,52" fill="#4a5428"/>
+  <!-- Horizontal stabilizer left -->
+  <polygon points="25,52 14,56 14,59 26,56" fill="#5a6838"/>
+  <!-- Horizontal stabilizer right -->
+  <polygon points="39,52 50,56 50,59 38,56" fill="#5a6838"/>
+
+  <!-- === WAIST GUNNER BLISTERS === -->
+  <!-- Left blister -->
+  <ellipse cx="24" cy="39" rx="2.5" ry="2" fill="#3a4220" opacity="0.9"/>
+  <line x1="22" y1="38" x2="20" y2="36" stroke="#2a2a1a" stroke-width="1.2"/>
+  <!-- Right blister -->
+  <ellipse cx="40" cy="39" rx="2.5" ry="2" fill="#3a4220" opacity="0.9"/>
+  <line x1="42" y1="38" x2="44" y2="36" stroke="#2a2a1a" stroke-width="1.2"/>
+
+  <!-- Top turret (just behind cockpit) -->
+  <circle cx="32" cy="22" r="4" fill="#3a4220"/>
+  <line x1="32" y1="17" x2="32" y2="22" stroke="#1e2412" stroke-width="2"/>
+
+  <!-- Ball turret (belly, mid-rear) -->
+  <circle cx="32" cy="43" r="3" fill="#2a3018"/>
+
+  <!-- === WING ROUNDELS === -->
+  <circle cx="7"  cy="27" r="4"   fill="#cc2020"/>
+  <circle cx="7"  cy="27" r="2.5" fill="#ffffff"/>
+  <circle cx="7"  cy="27" r="1.2" fill="#1a40a0"/>
+  <circle cx="57" cy="27" r="4"   fill="#cc2020"/>
+  <circle cx="57" cy="27" r="2.5" fill="#ffffff"/>
+  <circle cx="57" cy="27" r="1.2" fill="#1a40a0"/>
+</svg>

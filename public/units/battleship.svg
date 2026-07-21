@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!--
+    Battleship — top-down view, bow pointing RIGHT
+    Key features: WIDE hull, dominant twin gun turrets (front + rear), large superstructure
+    Deliberately much wider/heavier than destroyer
+  -->
+
+  <!-- Water shadow -->
+  <ellipse cx="32" cy="58" rx="26" ry="5" fill="rgba(0,0,50,0.4)"/>
+  <!-- Bow wake -->
+  <path d="M56,30 Q63,36 61,44" stroke="#7090b0" stroke-width="2" fill="none" opacity="0.45"/>
+  <path d="M56,32 Q65,38 63,48" stroke="#7090b0" stroke-width="1" fill="none" opacity="0.25"/>
+
+  <!-- === HULL — wide, armored === -->
+  <!-- Hull bottom -->
+  <polygon points="6,52 56,52 62,42 56,26 6,26 4,42" fill="#1a2030"/>
+  <!-- Main deck -->
+  <polygon points="6,48 56,48 62,40 56,28 6,28 4,40" fill="#3a4050"/>
+  <!-- Bow face -->
+  <polygon points="56,28 62,40 56,48" fill="#2a3040"/>
+  <!-- Stern face -->
+  <polygon points="6,28 4,40 6,48" fill="#2a3040"/>
+  <!-- Deck highlight strip -->
+  <line x1="6" y1="29" x2="56" y2="29" stroke="#5a6070" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- === GUN TURRETS — the defining feature, big and prominent === -->
+  <!-- BOW TURRET (forward, twin guns pointing right) -->
+  <ellipse cx="48" cy="38" rx="9" ry="6" fill="#4a5060"/>
+  <ellipse cx="48" cy="38" rx="7" ry="4.5" fill="#5a6070"/>
+  <!-- Twin gun barrels — long and prominent -->
+  <rect x="56" y="35" width="14" height="2.5" rx="1" fill="#1a2030"/>
+  <rect x="56" y="39" width="13" height="2.5" rx="1" fill="#1a2030"/>
+
+  <!-- AFT TURRET (rear, twin guns pointing left) -->
+  <ellipse cx="16" cy="38" rx="9" ry="6" fill="#4a5060"/>
+  <ellipse cx="16" cy="38" rx="7" ry="4.5" fill="#5a6070"/>
+  <!-- Twin gun barrels — long and prominent, pointing left -->
+  <rect x="2"  y="35" width="14" height="2.5" rx="1" fill="#1a2030"/>
+  <rect x="3"  y="39" width="13" height="2.5" rx="1" fill="#1a2030"/>
+
+  <!-- === SUPERSTRUCTURE (central, heavy) === -->
+  <rect x="24" y="22" width="16" height="16" rx="1" fill="#4a5060"/>
+  <rect x="24" y="22" width="4"  height="16" fill="#2a3040"/>
+  <!-- Bridge top -->
+  <rect x="26" y="17" width="12" height="7" rx="1" fill="#5a6070"/>
+  <!-- Conning tower -->
+  <rect x="28" y="12" width="8"  height="7" rx="1" fill="#6a7080"/>
+  <rect x="28" y="12" width="2"  height="7" fill="#4a5060"/>
+  <!-- Main mast -->
+  <line x1="32" y1="4" x2="32" y2="12" stroke="#2a3040" stroke-width="2.5"/>
+  <!-- Radar bar -->
+  <rect x="26" y="4" width="12" height="2" rx="0.5" fill="#2a3040"/>
+
+  <!-- Funnels -->
+  <rect x="27" y="16" width="4" height="5" rx="1" fill="#1a1a1a"/>
+  <rect x="33" y="17" width="4" height="4" rx="1" fill="#1a1a1a"/>
+
+  <!-- Small secondary AA guns on sides -->
+  <circle cx="10" cy="32" r="2" fill="#3a4050"/>
+  <line   x1="10" y1="29" x2="10" y2="32" stroke="#1a2030" stroke-width="1.5"/>
+  <circle cx="54" cy="44" r="2" fill="#3a4050"/>
+  <line   x1="54" y1="44" x2="54" y2="41" stroke="#1a2030" stroke-width="1.5"/>
+</svg>

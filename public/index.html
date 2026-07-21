@@ -205,9 +205,10 @@
   }
 
   #map-canvas {
+    will-change: contents;
+    touch-action: none;
     display: block;
     cursor: pointer;
-    touch-action: none;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -492,7 +493,7 @@
       <li><strong>Fog of War:</strong> You only see tiles near your units/cities.</li>
     </ul>
     <div style="margin-top:10px">
-      <strong>Units:</strong> 🪖Infantry 🛡️Tank ✈️Fighter 🚁Helicopter 💣Bomber 🚢Destroyer 🤿Sub ⛴️Transport 🛣️Carrier ⚓Battleship
+      <strong>Units:</strong> 🪖Infantry 🛡️Tank ✈️Fighter 💣Bomber 🚢Destroyer 🤿Sub ⛴️Transport 🛣️Carrier ⚓Battleship
     </div>
   </div>
 </div>
@@ -602,6 +603,12 @@ var gameState = null;
 var selectedUnit = null;
 var selectedCityPos = null;
 
+// ── Visual animation state ────────────────────────────────────────────────
+var _animRafId = null;       // requestAnimationFrame handle for continuous animation
+var _animNeeded = false;     // true when ocean/fog tiles are visible and need animation
+var _lastAnimTime = 0;       // last time animation frame ran
+var _ANIM_THROTTLE = 33;     // ~30fps cap for background animation (ms)
+
 // Pending boarding opportunity
 var pendingBoarding = null; // { transportId, unitId }
 
@@ -614,6 +621,19 @@ var selectedMapSize = 'large';
 
 // Flash effect for completed cities
 var cityFlashTimers = {}; // cityId -> timestamp when flash started
+
+// ── Stable pseudo-random seeded by position (for fog stars, grass dots) ──
+function seededRand(seed) {
+  // Simple LCG — deterministic per tile position
+  var s = seed ^ 0xdeadbeef;
+  s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+  s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+  return ((s ^ (s >>> 16)) >>> 0) / 0xffffffff;
+}
+
+function seededRandN(col, row, idx) {
+  return seededRand(col * 7919 + row * 4999 + idx * 31337);
+}
 
 // Unload hex highlight state
 var unloadHexes = null;      // array of {x,y} land hexes to highlight
@@ -1067,6 +1087,25 @@ var COLORS = {
   selected: '#ffd700',
 };
 
+// ── Start animation loop for ocean/fog pulse ───────────────────────────────
+function startAnimLoop() {
+  if (_animRafId !== null) return; // already running
+  function animFrame(ts) {
+    _animRafId = null;
+    if (!_animNeeded) return; // nothing to animate, let it idle
+    if (ts - _lastAnimTime >= _ANIM_THROTTLE) {
+      _lastAnimTime = ts;
+      render();
+    }
+    _animRafId = requestAnimationFrame(animFrame);
+  }
+  _animRafId = requestAnimationFrame(animFrame);
+}
+
+function stopAnimLoop() {
+  if (_animRafId !== null) { cancelAnimationFrame(_animRafId); _animRafId = null; }
+}
+
 function render() {
   if (!canvas || !ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1082,9 +1121,15 @@ function render() {
   var tiles = gameState.tiles;
   var units = gameState.units;
 
+  // Global animation time
+  var now = Date.now();
+
   var margin = size * 2;
   var startRow = Math.max(0, Math.floor((cam.y - margin) / vStep));
   var endRow   = Math.min(MAP_H - 1, Math.ceil((cam.y + canvas.height + margin) / vStep));
+
+  // Detect whether we have animated tiles in view — start/stop animation loop
+  var hasAnimTiles = false;
 
   // Draw tiles
   for (var row = startRow; row <= endRow; row++) {
@@ -1094,10 +1139,30 @@ function render() {
     for (var col = startCol; col <= endCol; col++) {
       var tile = tiles[row] && tiles[row][col];
       if (!tile) continue;
+      if (tile.type === 'ocean' || tile.type === 'fog') hasAnimTiles = true;
       var cen = hexToScreen(col, row);
-      drawHex(ctx, cen.x, cen.y, size, tile, col, row);
+      drawHex(ctx, cen.x, cen.y, size, tile, col, row, now);
     }
   }
+
+  // Manage animation loop based on whether animated tiles are visible
+  if (hasAnimTiles !== _animNeeded) {
+    _animNeeded = hasAnimTiles;
+    if (_animNeeded) startAnimLoop();
+  }
+
+  // Vignette overlay — drawn after all tiles, before units
+  (function() {
+    var vw = canvas.width, vh = canvas.height;
+    var cx2 = vw / 2, cy2 = vh / 2;
+    var r1 = Math.max(cx2, cy2) * 0.55;
+    var r2 = Math.max(cx2, cy2) * 1.25;
+    var vg = ctx.createRadialGradient(cx2, cy2, r1, cx2, cy2, r2);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.52)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, vw, vh);
+  })();
 
   // Draw move range overlay for selected unit
   if (selectedUnit && selectedUnit.owner === myPlayerNum && selectedUnit.movesLeft > 0) {
@@ -1114,7 +1179,7 @@ function render() {
   }
 
   // Unit cost priority for picking which to display when stacked
-  var unitCost = { army:2, tank:4, fighter:7, helicopter:6, bomber:5, destroyer:6, submarine:8, transport:8, carrier:12, battleship:14 };
+  var unitCost = { army:2, tank:4, fighter:7, bomber:5, destroyer:6, submarine:8, transport:8, carrier:12, battleship:14 };
 
   // Draw one representative unit per tile
   var drawnTiles = {};
@@ -1142,7 +1207,7 @@ function render() {
   }
 }
 
-function drawHex(ctx, cx, cy, size, tile, col, row) {
+function drawHex(ctx, cx, cy, size, tile, col, row, now) {
   // Void tiles: draw nothing at all — pure background, completely invisible
   if (tile.type === 'void') {
     // Fill a slightly oversized rect to cover any anti-aliasing bleed from neighbors
@@ -1156,32 +1221,163 @@ function drawHex(ctx, cx, cy, size, tile, col, row) {
   ctx.moveTo(pts[0].x, pts[0].y);
   for (var i = 1; i < 6; i++) ctx.lineTo(pts[i].x, pts[i].y);
   ctx.closePath();
+  var hexPath = new Path2D();
+  hexPath.moveTo(pts[0].x, pts[0].y);
+  for (var i = 1; i < 6; i++) hexPath.lineTo(pts[i].x, pts[i].y);
+  hexPath.closePath();
 
+  // ── FOG TILES ────────────────────────────────────────────────────────────
   if (tile.type === 'fog') {
-    ctx.fillStyle = COLORS.fog;
+    // Dark gradient: slightly lighter center, very dark edges
+    var fogGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 1.1);
+    fogGrad.addColorStop(0, '#1e1e1e');
+    fogGrad.addColorStop(0.6, '#111');
+    fogGrad.addColorStop(1, '#080808');
+    ctx.fillStyle = fogGrad;
     ctx.fill();
+
+    // Stable star-like dots seeded by col/row
+    if (size >= 10) {
+      ctx.save();
+      ctx.clip(hexPath);
+      var starCount = 4;
+      for (var si = 0; si < starCount; si++) {
+        var sr1 = seededRandN(col, row, si * 3);
+        var sr2 = seededRandN(col, row, si * 3 + 1);
+        var sr3 = seededRandN(col, row, si * 3 + 2);
+        // Place within the inner hex area
+        var sAngle = sr1 * Math.PI * 2;
+        var sDist = sr2 * size * 0.62;
+        var sx2 = cx + Math.cos(sAngle) * sDist;
+        var sy2 = cy + Math.sin(sAngle) * sDist;
+        var sRadius = 0.5 + sr3 * 0.8;
+        var sAlpha = 0.18 + sr3 * 0.22;
+        ctx.fillStyle = 'rgba(180,200,255,' + sAlpha + ')';
+        ctx.beginPath();
+        ctx.arc(sx2, sy2, sRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
     return;
   }
 
   var dimmed = tile.dimmed === true;
   ctx.globalAlpha = dimmed ? 0.45 : 1.0;
 
+  // ── OCEAN TILES ──────────────────────────────────────────────────────────
   if (tile.type === 'ocean') {
-    ctx.fillStyle = COLORS.ocean;
+    // Slow sine-wave pulse (period ~4s)
+    var t4 = (now || 0) / 4000;
+    var pulse = 0.5 + 0.5 * Math.sin(t4 * Math.PI * 2 + (col * 0.37 + row * 0.53));
+    var pulseAlpha = 0.06 * pulse; // very subtle
+
+    // Radial gradient: deep navy center, slightly lighter edges
+    var oceanGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 1.1);
+    oceanGrad.addColorStop(0, '#122f55');
+    oceanGrad.addColorStop(0.6, '#0d2b4b');
+    oceanGrad.addColorStop(1, '#0a2040');
+    ctx.fillStyle = oceanGrad;
     ctx.fill();
+
+    // Subtle pulse shimmer overlay
+    if (pulseAlpha > 0) {
+      ctx.save();
+      ctx.clip(hexPath);
+      var shimGrad = ctx.createRadialGradient(cx, cy - size * 0.2, size * 0.05, cx, cy, size * 0.85);
+      shimGrad.addColorStop(0, 'rgba(80,140,220,' + (pulseAlpha * 3) + ')');
+      shimGrad.addColorStop(1, 'rgba(30,80,160,' + pulseAlpha + ')');
+      ctx.fillStyle = shimGrad;
+      ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+      ctx.restore();
+    }
+
+    // Faint wave-like strokes (a couple short curved arcs)
+    if (size >= 14) {
+      ctx.save();
+      ctx.clip(hexPath);
+      ctx.strokeStyle = 'rgba(100,160,230,' + (0.08 + 0.05 * pulse) + ')';
+      ctx.lineWidth = 0.7;
+      // Two small arc-waves offset by seeded position
+      var w1x = cx + seededRandN(col, row, 0) * size * 0.5 - size * 0.25;
+      var w1y = cy + seededRandN(col, row, 1) * size * 0.4 - size * 0.2;
+      ctx.beginPath();
+      ctx.arc(w1x, w1y, size * 0.28, 0.1, Math.PI - 0.1);
+      ctx.stroke();
+      var w2x = cx + seededRandN(col, row, 2) * size * 0.5 - size * 0.25;
+      var w2y = cy + seededRandN(col, row, 3) * size * 0.4;
+      ctx.beginPath();
+      ctx.arc(w2x, w2y, size * 0.2, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+  // ── LAND TILES ───────────────────────────────────────────────────────────
   } else if (tile.type === 'land') {
-    ctx.fillStyle = COLORS.land;
+    // Radial gradient: lighter green center, darker edges
+    var landGrad = ctx.createRadialGradient(cx, cy - size * 0.1, size * 0.05, cx, cy, size * 1.1);
+    landGrad.addColorStop(0, '#3a6e30');
+    landGrad.addColorStop(0.5, '#2d5a27');
+    landGrad.addColorStop(1, '#224020');
+    ctx.fillStyle = landGrad;
     ctx.fill();
+
+    // Grass/terrain texture dots
+    if (size >= 14) {
+      ctx.save();
+      ctx.clip(hexPath);
+      var dotCount = 5;
+      for (var di = 0; di < dotCount; di++) {
+        var dAngle = seededRandN(col, row, di * 4) * Math.PI * 2;
+        var dDist = seededRandN(col, row, di * 4 + 1) * size * 0.58;
+        var dx2 = cx + Math.cos(dAngle) * dDist;
+        var dy2 = cy + Math.sin(dAngle) * dDist;
+        var dAlpha = 0.09 + seededRandN(col, row, di * 4 + 2) * 0.10;
+        var dSize = 0.7 + seededRandN(col, row, di * 4 + 3) * 1.2;
+        ctx.fillStyle = 'rgba(60,100,40,' + dAlpha + ')';
+        ctx.fillRect(dx2 - dSize * 0.4, dy2 - dSize, dSize * 0.5, dSize);
+        ctx.fillRect(dx2, dy2 - dSize * 0.7, dSize * 0.5, dSize * 0.7);
+      }
+      ctx.restore();
+    }
+
+  // ── CITY TILES ───────────────────────────────────────────────────────────
   } else if (tile.type === 'city') {
-    ctx.fillStyle = COLORS.land;
+    // Land base gradient
+    var cityLandGrad = ctx.createRadialGradient(cx, cy - size * 0.1, size * 0.05, cx, cy, size * 1.1);
+    cityLandGrad.addColorStop(0, '#3a6e30');
+    cityLandGrad.addColorStop(0.5, '#2d5a27');
+    cityLandGrad.addColorStop(1, '#224020');
+    ctx.fillStyle = cityLandGrad;
     ctx.fill();
+
+    // Owner-colored soft hex fill at low opacity
+    if (!dimmed && tile.city) {
+      var ownerTint = tile.city.owner === 1 ? 'rgba(30,100,220,0.18)'
+                     : tile.city.owner === 2 ? 'rgba(200,40,40,0.18)'
+                     : 'rgba(100,100,100,0.12)';
+      ctx.save();
+      ctx.clip(hexPath);
+      ctx.fillStyle = ownerTint;
+      ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+      ctx.restore();
+    }
+
     ctx.globalAlpha = dimmed ? 0.45 : 1.0;
   }
 
-  // Hex border
+  // Hex border — per-type, subtle
   if (size >= 8) {
-    ctx.strokeStyle = COLORS.gridLine;
-    ctx.lineWidth = 0.8;
+    var borderColor;
+    if (tile.type === 'ocean') {
+      borderColor = 'rgba(60,120,200,0.28)';
+    } else if (tile.type === 'land' || tile.type === 'city') {
+      borderColor = 'rgba(80,140,60,0.22)';
+    } else {
+      borderColor = COLORS.gridLine;
+    }
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 0.7;
     ctx.stroke();
   }
 
@@ -1190,7 +1386,22 @@ function drawHex(ctx, cx, cy, size, tile, col, row) {
   // City icon - industrial complex silhouette (drawn small, bottom of tile)
   if (tile.type === 'city' && size >= 12) {
     ctx.save();
-    ctx.globalAlpha = dimmed ? 0.4 : 0.75; // subtle - doesn't overpower unit icons
+    // Glow halo based on owner color
+    if (!dimmed && tile.city && size >= 14) {
+      var glowColor = tile.city.owner === 1 ? 'rgba(31,111,235,0.35)'
+                    : tile.city.owner === 2 ? 'rgba(218,54,51,0.35)'
+                    : 'rgba(120,120,120,0.22)';
+      var haloGrad = ctx.createRadialGradient(cx, cy, size * 0.1, cx, cy, size * 0.72);
+      haloGrad.addColorStop(0, glowColor);
+      haloGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.clip(hexPath);
+      ctx.fillStyle = haloGrad;
+      ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = dimmed ? 0.4 : 0.88; // slightly more opaque for clarity
     var co2 = (!dimmed && tile.city) ? tile.city.owner : null;
     ctx.fillStyle = co2 === 1 ? COLORS.cityP1 : co2 === 2 ? COLORS.cityP2 : COLORS.cityN;
     drawIconFactory(ctx, cx, cy, size * 0.52);
@@ -1233,10 +1444,12 @@ function drawHex(ctx, cx, cy, size, tile, col, row) {
     var drawLen = fraction * perimeter;
 
     ctx.save();
+    // Glow pass (wider, lower opacity)
     ctx.strokeStyle = ringColor;
-    ctx.lineWidth = Math.max(3, size * 0.18);
+    ctx.lineWidth = Math.max(5, size * 0.28);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    ctx.globalAlpha = 0.22;
     ctx.beginPath();
     var remaining = drawLen;
     ctx.moveTo(ringOrder[0].x, ringOrder[0].y);
@@ -1248,9 +1461,28 @@ function drawHex(ctx, cx, cy, size, tile, col, row) {
         ctx.lineTo(to.x, to.y);
         remaining -= edgeLen;
       } else {
-        // Partial edge
         var t2 = remaining / edgeLen;
         ctx.lineTo(from.x + (to.x - from.x) * t2, from.y + (to.y - from.y) * t2);
+        remaining = 0;
+      }
+    }
+    ctx.stroke();
+    // Crisp pass (normal)
+    ctx.globalAlpha = 1.0;
+    ctx.lineWidth = Math.max(3, size * 0.16);
+    ctx.beginPath();
+    remaining = drawLen;
+    ctx.moveTo(ringOrder[0].x, ringOrder[0].y);
+    for (var ei2 = 0; ei2 < 6 && remaining > 0; ei2++) {
+      var from2 = ringOrder[ei2];
+      var to2 = ringOrder[ei2 + 1];
+      var edgeLen2 = Math.sqrt(Math.pow(to2.x - from2.x, 2) + Math.pow(to2.y - from2.y, 2));
+      if (remaining >= edgeLen2) {
+        ctx.lineTo(to2.x, to2.y);
+        remaining -= edgeLen2;
+      } else {
+        var t3 = remaining / edgeLen2;
+        ctx.lineTo(from2.x + (to2.x - from2.x) * t3, from2.y + (to2.y - from2.y) * t3);
         remaining = 0;
       }
     }
@@ -1336,80 +1568,86 @@ function drawIconTank(ctx, cx, cy, s) {
 }
 
 function drawIconFighter(ctx, cx, cy, s) {
-  // Fuselage
+  // P-51 Mustang — side-view silhouette, nose pointing RIGHT
+  // Slim fuselage
   ctx.beginPath();
-  ctx.moveTo(cx + s * 0.75, cy);
-  ctx.lineTo(cx - s * 0.55, cy - s * 0.12);
-  ctx.lineTo(cx - s * 0.75, cy);
-  ctx.lineTo(cx - s * 0.55, cy + s * 0.12);
+  ctx.moveTo(cx + s * 0.82, cy);           // nose tip
+  ctx.lineTo(cx + s * 0.60, cy - s * 0.08); // top nose
+  ctx.lineTo(cx - s * 0.10, cy - s * 0.10); // top fuselage (cockpit hump)
+  ctx.lineTo(cx - s * 0.10, cy - s * 0.20); // cockpit canopy top
+  ctx.lineTo(cx - s * 0.28, cy - s * 0.20); // canopy rear
+  ctx.lineTo(cx - s * 0.55, cy - s * 0.08); // spine taper
+  ctx.lineTo(cx - s * 0.75, cy - s * 0.18); // tail fin top
+  ctx.lineTo(cx - s * 0.75, cy - s * 0.04); // tail fin base top
+  ctx.lineTo(cx - s * 0.60, cy);            // tail base
+  ctx.lineTo(cx - s * 0.75, cy + s * 0.04); // tail fin base bottom
+  ctx.lineTo(cx - s * 0.75, cy + s * 0.14); // lower tail fin
+  ctx.lineTo(cx - s * 0.55, cy + s * 0.05); // belly taper
+  ctx.lineTo(cx + s * 0.30, cy + s * 0.10); // belly
+  ctx.lineTo(cx + s * 0.82, cy);            // back to nose
   ctx.closePath();
   ctx.fill();
-  // Swept delta wings
+  // Elliptical wing (P-51 hallmark) — below fuselage centerline
   ctx.beginPath();
-  ctx.moveTo(cx + s * 0.05, cy);
-  ctx.lineTo(cx - s * 0.45, cy - s * 0.55);
-  ctx.lineTo(cx - s * 0.55, cy - s * 0.15);
-  ctx.closePath();
+  ctx.ellipse(cx - s * 0.08, cy + s * 0.12, s * 0.44, s * 0.18, Math.PI * 0.05, 0, Math.PI * 2);
   ctx.fill();
+  // Propeller disc
   ctx.beginPath();
-  ctx.moveTo(cx + s * 0.05, cy);
-  ctx.lineTo(cx - s * 0.45, cy + s * 0.55);
-  ctx.lineTo(cx - s * 0.55, cy + s * 0.15);
-  ctx.closePath();
+  ctx.ellipse(cx + s * 0.82, cy, s * 0.05, s * 0.32, 0, 0, Math.PI * 2);
   ctx.fill();
-  // Tail fin
-  ctx.beginPath();
-  ctx.moveTo(cx - s * 0.6, cy);
-  ctx.lineTo(cx - s * 0.75, cy - s * 0.28);
-  ctx.lineTo(cx - s * 0.75, cy);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function drawIconHelicopter(ctx, cx, cy, s) {
-  // Fuselage oval
-  ctx.beginPath();
-  ctx.ellipse(cx, cy + s * 0.1, s * 0.55, s * 0.25, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Main rotor (horizontal line)
-  ctx.fillRect(cx - s * 0.75, cy - s * 0.15, s * 1.5, s * 0.07);
-  // Tail boom
-  ctx.fillRect(cx + s * 0.5, cy + s * 0.05, s * 0.4, s * 0.08);
-  // Tail rotor
-  ctx.fillRect(cx + s * 0.82, cy - s * 0.12, s * 0.07, s * 0.28);
 }
 
 function drawIconBomber(ctx, cx, cy, s) {
-  // Wide fuselage
+  // B-17 Flying Fortress — side-view silhouette, nose pointing RIGHT
+  // Fat slab-sided fuselage
   ctx.beginPath();
-  ctx.moveTo(cx + s * 0.75, cy);
-  ctx.lineTo(cx - s * 0.45, cy - s * 0.2);
-  ctx.lineTo(cx - s * 0.75, cy);
-  ctx.lineTo(cx - s * 0.45, cy + s * 0.2);
+  ctx.moveTo(cx + s * 0.78, cy - s * 0.04); // nose top (plexiglass chin rounds down)
+  ctx.lineTo(cx + s * 0.70, cy - s * 0.12); // glazed nose top
+  ctx.lineTo(cx + s * 0.20, cy - s * 0.15); // top fuselage forward
+  ctx.lineTo(cx + s * 0.20, cy - s * 0.26); // cockpit top
+  ctx.lineTo(cx - s * 0.05, cy - s * 0.26); // cockpit rear
+  ctx.lineTo(cx - s * 0.10, cy - s * 0.18); // top fuselage
+  ctx.lineTo(cx - s * 0.42, cy - s * 0.14); // spine
+  ctx.lineTo(cx - s * 0.55, cy - s * 0.30); // left tail fin top
+  ctx.lineTo(cx - s * 0.68, cy - s * 0.30); // left fin tip
+  ctx.lineTo(cx - s * 0.72, cy - s * 0.18); // left fin inner top
+  ctx.lineTo(cx - s * 0.75, cy - s * 0.06); // tail
+  ctx.lineTo(cx - s * 0.72, cy + s * 0.06); // tail bottom
+  ctx.lineTo(cx - s * 0.68, cy + s * 0.22); // right fin tip
+  ctx.lineTo(cx - s * 0.55, cy + s * 0.22); // right tail fin outer
+  ctx.lineTo(cx - s * 0.42, cy + s * 0.10); // belly spine
+  ctx.lineTo(cx + s * 0.30, cy + s * 0.18); // belly
+  ctx.lineTo(cx + s * 0.70, cy + s * 0.10); // chin
+  ctx.lineTo(cx + s * 0.78, cy + s * 0.02); // nose bottom
   ctx.closePath();
   ctx.fill();
-  // Wide straight wings
+  // Wide rectangular wings (B-17 key feature) — top and bottom
+  // Upper wing slab
   ctx.beginPath();
-  ctx.moveTo(cx + s * 0.1, cy - s * 0.08);
-  ctx.lineTo(cx - s * 0.2, cy - s * 0.65);
-  ctx.lineTo(cx - s * 0.4, cy - s * 0.65);
-  ctx.lineTo(cx - s * 0.3, cy - s * 0.08);
+  ctx.moveTo(cx + s * 0.20, cy - s * 0.15);
+  ctx.lineTo(cx - s * 0.15, cy - s * 0.15);
+  ctx.lineTo(cx - s * 0.22, cy - s * 0.70);
+  ctx.lineTo(cx + s * 0.02, cy - s * 0.70);
   ctx.closePath();
   ctx.fill();
+  // Lower wing slab
   ctx.beginPath();
-  ctx.moveTo(cx + s * 0.1, cy + s * 0.08);
-  ctx.lineTo(cx - s * 0.2, cy + s * 0.65);
-  ctx.lineTo(cx - s * 0.4, cy + s * 0.65);
-  ctx.lineTo(cx - s * 0.3, cy + s * 0.08);
+  ctx.moveTo(cx + s * 0.20, cy + s * 0.15);
+  ctx.lineTo(cx - s * 0.15, cy + s * 0.15);
+  ctx.lineTo(cx - s * 0.22, cy + s * 0.70);
+  ctx.lineTo(cx + s * 0.02, cy + s * 0.70);
   ctx.closePath();
   ctx.fill();
-  // Engine bumps
-  ctx.beginPath();
-  ctx.ellipse(cx - s * 0.12, cy - s * 0.38, s * 0.1, s * 0.07, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(cx - s * 0.12, cy + s * 0.38, s * 0.1, s * 0.07, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // 4 engine nacelles (2 per wing)
+  ctx.beginPath(); ctx.ellipse(cx - s * 0.03, cy - s * 0.38, s * 0.12, s * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx - s * 0.16, cy - s * 0.54, s * 0.10, s * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx - s * 0.03, cy + s * 0.38, s * 0.12, s * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx - s * 0.16, cy + s * 0.54, s * 0.10, s * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+  // Propeller discs
+  ctx.beginPath(); ctx.ellipse(cx + s * 0.09, cy - s * 0.38, s * 0.04, s * 0.14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx - s * 0.04, cy - s * 0.54, s * 0.03, s * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + s * 0.09, cy + s * 0.38, s * 0.04, s * 0.14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx - s * 0.04, cy + s * 0.54, s * 0.03, s * 0.12, 0, 0, Math.PI * 2); ctx.fill();
 }
 
 function drawIconDestroyer(ctx, cx, cy, s) {
@@ -1629,7 +1867,6 @@ function drawIconByType(ctx, type, cx, cy, s) {
   if (type === 'army') drawIconInfantry(ctx, cx, cy, s);
   else if (type === 'tank') drawIconTank(ctx, cx, cy, s);
   else if (type === 'fighter') drawIconFighter(ctx, cx, cy, s);
-  else if (type === 'helicopter') drawIconHelicopter(ctx, cx, cy, s);
   else if (type === 'bomber') drawIconBomber(ctx, cx, cy, s);
   else if (type === 'destroyer') drawIconDestroyer(ctx, cx, cy, s);
   else if (type === 'submarine') drawIconSubmarine(ctx, cx, cy, s);
@@ -1798,7 +2035,7 @@ function isTileFull(tiles, x, y, units) {
 }
 
 function getDomain(type) {
-  var d = { army:'land', tank:'land', fighter:'air', helicopter:'air', bomber:'air', destroyer:'sea', submarine:'sea', transport:'sea', carrier:'sea', battleship:'sea' };
+  var d = { army:'land', tank:'land', fighter:'air', bomber:'air', destroyer:'sea', submarine:'sea', transport:'sea', carrier:'sea', battleship:'sea' };
   return d[type] || 'land';
 }
 
@@ -1863,7 +2100,7 @@ function updateHUD() {
 
       // If land unit selected, check for adjacent friendly transports to board
       if (getDomain(u.type) === 'land' && u.owner === myPlayerNum && u.movesLeft > 0) {
-        var nbs = hexNeighborsList(u.x, u.y);
+        var nbs = hexNeighbors(u.x, u.y);
         // Also include same tile
         var checkPositions = nbs.concat([{x: u.x, y: u.y}]);
         var nearbyTransports = state.units.filter(function(t) {
@@ -1962,7 +2199,7 @@ function updateTransportUI(transport, state) {
   }
 
   if (transport.cargo && transport.cargo.length > 0) {
-    var adjLand = hexNeighborsList(transport.x, transport.y).filter(function(nb) {
+    var adjLand = hexNeighbors(transport.x, transport.y).filter(function(nb) {
       var t = state.tiles[nb.y] && state.tiles[nb.y][nb.x];
       return t && (t.type === 'land' || t.type === 'city');
     });
@@ -2003,17 +2240,6 @@ function updateTransportUI(transport, state) {
     lbl.textContent = 'Cargo: ' + transport.cargo.map(function(c) { return c.symbol + ' ' + getUnitDisplayName(c.type); }).join(', ') + ' (' + usedSlots + '/' + capacity + ' slots)';
     btns.appendChild(lbl);
   }
-}
-
-function hexNeighborsList(col, row) {
-  var dirs = (row % 2 === 0) ? HEX_NEIGHBORS_EVEN : HEX_NEIGHBORS_ODD;
-  var result = [];
-  for (var i = 0; i < dirs.length; i++) {
-    var nc = col + dirs[i][0], nr = row + dirs[i][1];
-    if (nc >= 0 && nc < MAP_W && nr >= 0 && nr < MAP_H)
-      result.push({ x: nc, y: nr });
-  }
-  return result;
 }
 
 function showUnloadPicker(transport, adjLand) {
@@ -2086,6 +2312,16 @@ function startCountdown(deadline) {
 
 // ── Pan / Zoom ─────────────────────────────────────────────────────────────
 var dragStart = null, didDrag = false;
+var _panRafPending = false;
+
+function schedulePanRender() {
+  if (_panRafPending) return;
+  _panRafPending = true;
+  requestAnimationFrame(function() {
+    _panRafPending = false;
+    render();
+  });
+}
 
 function onPointerDown(e) {
   dragStart = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y };
@@ -2102,7 +2338,7 @@ function onPointerMove(e) {
     cam.x = dragStart.cx - dx;
     cam.y = dragStart.cy - dy;
     clampCamera();
-    render();
+    schedulePanRender();
   }
 }
 
@@ -2166,7 +2402,7 @@ function onTouchMove(e) {
       cam.x = dragStart.cx - dx;
       cam.y = dragStart.cy - dy;
       clampCamera();
-      render();
+      schedulePanRender();
     }
   } else if (e.touches.length === 2 && pinchDist0 !== null) {
     var t1 = e.touches[0], t2 = e.touches[1];
@@ -2181,7 +2417,7 @@ function onTouchMove(e) {
     cam.x = wx - pcx;
     cam.y = wy - pcy;
     clampCamera();
-    render();
+    schedulePanRender();
   }
 }
 

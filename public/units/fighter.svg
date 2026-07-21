@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!--
+    P-51 Mustang — top-down view, nose pointing UP
+    Key silhouette features:
+    - Bubble canopy (low, rounded)
+    - Elliptical/tapered wings (characteristic P-51 shape)
+    - Inline Merlin engine (narrow nose)
+    - Single-engine, single propeller
+    - Clipped tail, twin tailplanes
+  -->
+
+  <!-- Drop shadow -->
+  <ellipse cx="32" cy="58" rx="16" ry="4" fill="rgba(0,0,0,0.25)"/>
+
+  <!-- === WINGS (elliptical, P-51 style) === -->
+  <!-- Left wing — tapered, slightly swept leading edge -->
+  <polygon points="32,30 4,23 2,28 30,38" fill="#7a6a3a"/>
+  <!-- Right wing -->
+  <polygon points="32,30 60,23 62,28 34,38" fill="#6a5c32"/>
+  <!-- Wing shading (top highlight) -->
+  <polygon points="32,30 6,24 6,26 32,33" fill="#9a8a50" opacity="0.5"/>
+  <polygon points="32,30 58,24 58,26 32,33" fill="#9a8a50" opacity="0.35"/>
+
+  <!-- === FUSELAGE — slim, inline engine shape === -->
+  <!-- Main body — narrow at nose, slight belly at cockpit -->
+  <polygon points="31,8 33,8 35,28 35,48 32,52 29,48 29,28" fill="#8a7a44"/>
+  <!-- Left fuselage shade -->
+  <polygon points="29,10 27,14 27,48 29,48" fill="#6a5c30"/>
+  <!-- Right fuselage highlight -->
+  <polygon points="33,8 35,10 35,16 33,12" fill="#aa9a5a"/>
+
+  <!-- Nose — slim spinner housing for inline engine -->
+  <ellipse cx="32" cy="9" rx="3" ry="4" fill="#5a4e28"/>
+
+  <!-- Propeller (3-blade, Hamilton Standard) -->
+  <!-- Spinner -->
+  <ellipse cx="32" cy="7" rx="2.5" ry="2.5" fill="#3a3020"/>
+  <!-- Blade 1 — up -->
+  <ellipse cx="32" cy="3"  rx="1.2" ry="4.5" fill="#2a2818"/>
+  <!-- Blade 2 — lower left -->
+  <ellipse cx="29" cy="10" rx="1.2" ry="4.5" fill="#2a2818" transform="rotate(-120,32,7)"/>
+  <!-- Blade 3 — lower right -->
+  <ellipse cx="35" cy="10" rx="1.2" ry="4.5" fill="#2a2818" transform="rotate(120,32,7)"/>
+
+  <!-- === BUBBLE CANOPY (P-51 D hallmark) === -->
+  <!-- Canopy base/coaming -->
+  <ellipse cx="32" cy="29" rx="4.5" ry="5.5" fill="#4a4224"/>
+  <!-- Canopy glass — rounded, clear bubble -->
+  <ellipse cx="32" cy="28" rx="3.5" ry="4.5" fill="#5090b0" opacity="0.85"/>
+  <!-- Canopy highlight -->
+  <ellipse cx="31" cy="26" rx="1.5" ry="2" fill="#90c0e0" opacity="0.6"/>
+
+  <!-- Radiator scoop under belly (characteristic P-51 feature) -->
+  <rect x="30" y="36" width="4" height="8" rx="1" fill="#4a4028" opacity="0.8"/>
+  <rect x="30" y="37" width="4" height="1" fill="#2a2010" opacity="0.6"/>
+
+  <!-- === TAIL (twin tailplanes, P-51 style) === -->
+  <!-- Left horizontal stabilizer -->
+  <polygon points="29,48 18,52 18,55 30,51" fill="#6a5c30"/>
+  <!-- Right horizontal stabilizer -->
+  <polygon points="35,48 46,52 46,55 34,51" fill="#6a5c30"/>
+  <!-- Tail fin (rudder) — small dorsal -->
+  <polygon points="30,44 34,44 33,52 31,52" fill="#5a4e28"/>
+
+  <!-- === RAF/USAAF Roundels on wings === -->
+  <circle cx="10" cy="27" r="4"   fill="#cc2020"/>
+  <circle cx="10" cy="27" r="2.5" fill="#ffffff"/>
+  <circle cx="10" cy="27" r="1.2" fill="#1a40a0"/>
+  <circle cx="54" cy="27" r="4"   fill="#cc2020"/>
+  <circle cx="54" cy="27" r="2.5" fill="#ffffff"/>
+  <circle cx="54" cy="27" r="1.2" fill="#1a40a0"/>
+
+  <!-- Wingtip nav lights -->
+  <circle cx="3"  cy="27" r="1.5" fill="#dd3030"/>
+  <circle cx="61" cy="27" r="1.5" fill="#30aa30"/>
+
+  <!-- Wing guns (2 per wing, .50 cal) -->
+  <line x1="14" y1="25" x2="14" y2="30" stroke="#2a2010" stroke-width="1"/>
+  <line x1="18" y1="25" x2="18" y2="31" stroke="#2a2010" stroke-width="1"/>
+  <line x1="50" y1="25" x2="50" y2="30" stroke="#2a2010" stroke-width="1"/>
+  <line x1="46" y1="25" x2="46" y2="31" stroke="#2a2010" stroke-width="1"/>
+</svg>

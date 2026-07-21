@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unit Icon Preview</title>
+<style>
+  body { background: #1a1e28; color: #ccc; font-family: sans-serif; padding: 40px; }
+  h1 { color: #eee; margin-bottom: 30px; }
+  h2 { color: #aaa; margin: 30px 0 10px; border-bottom: 1px solid #333; padding-bottom: 6px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; }
+  .unit { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .unit span { font-size: 12px; color: #888; text-transform: capitalize; }
+  .bg-air   { background: #4a7090; border-radius: 8px; padding: 8px; }
+  .bg-sea   { background: #1a3a5a; border-radius: 8px; padding: 8px; }
+  .size-64  img { width: 64px; height: 64px; }
+  .size-128 img { width: 128px; height: 128px; }
+  .size-32  img { width: 32px; height: 32px; }
+</style>
+</head>
+<body>
+<h1>Stratcon — Unit Icons</h1>
+
+<h2>✈️ Air Units</h2>
+<div class="grid">
+  <div class="unit size-128">
+    <div class="bg-air"><img src="units/fighter.svg" alt="fighter"></div>
+    <span>Fighter (P-51)</span>
+  </div>
+  <div class="unit size-128">
+    <div class="bg-air"><img src="units/bomber.svg" alt="bomber"></div>
+    <span>Bomber (B-17)</span>
+  </div>
+</div>
+
+<h2>🚢 Naval Units</h2>
+<div class="grid">
+  <div class="unit size-128">
+    <div class="bg-sea"><img src="units/battleship.svg" alt="battleship"></div>
+    <span>Battleship</span>
+  </div>
+  <div class="unit size-128">
+    <div class="bg-sea"><img src="units/destroyer.svg" alt="destroyer"></div>
+    <span>Destroyer</span>
+  </div>
+  <div class="unit size-128">
+    <div class="bg-sea"><img src="units/carrier.svg" alt="carrier"></div>
+    <span>Carrier</span>
+  </div>
+  <div class="unit size-128">
+    <div class="bg-sea"><img src="units/transport.svg" alt="transport"></div>
+    <span>Transport</span>
+  </div>
+</div>
+
+<h2>At game size (64px)</h2>
+<div class="grid">
+  <div class="unit size-64">
+    <div class="bg-air"><img src="units/fighter.svg"></div><span>fighter</span>
+  </div>
+  <div class="unit size-64">
+    <div class="bg-air"><img src="units/bomber.svg"></div><span>bomber</span>
+  </div>
+  <div class="unit size-64">
+    <div class="bg-sea"><img src="units/battleship.svg"></div><span>battleship</span>
+  </div>
+  <div class="unit size-64">
+    <div class="bg-sea"><img src="units/destroyer.svg"></div><span>destroyer</span>
+  </div>
+  <div class="unit size-64">
+    <div class="bg-sea"><img src="units/carrier.svg"></div><span>carrier</span>
+  </div>
+  <div class="unit size-64">
+    <div class="bg-sea"><img src="units/transport.svg"></div><span>transport</span>
+  </div>
+</div>
+
+<h2>Tiny (32px in-game scale)</h2>
+<div class="grid">
+  <div class="unit size-32">
+    <div class="bg-air"><img src="units/fighter.svg"></div><span>fighter</span>
+  </div>
+  <div class="unit size-32">
+    <div class="bg-air"><img src="units/bomber.svg"></div><span>bomber</span>
+  </div>
+  <div class="unit size-32">
+    <div class="bg-sea"><img src="units/battleship.svg"></div><span>battleship</span>
+  </div>
+  <div class="unit size-32">
+    <div class="bg-sea"><img src="units/destroyer.svg"></div><span>destroyer</span>
+  </div>
+  <div class="unit size-32">
+    <div class="bg-sea"><img src="units/carrier.svg"></div><span>carrier</span>
+  </div>
+  <div class="unit size-32">
+    <div class="bg-sea"><img src="units/transport.svg"></div><span>transport</span>
+  </div>
+</div>
+</body>
+</html>

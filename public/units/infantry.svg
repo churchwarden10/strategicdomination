@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Shadow -->
+  <ellipse cx="32" cy="57" rx="12" ry="4" fill="rgba(0,0,0,0.3)"/>
+  <!-- Boots -->
+  <rect x="27" y="50" width="4" height="4" rx="1" fill="#3d2b1f"/>
+  <rect x="33" y="50" width="4" height="4" rx="1" fill="#3d2b1f"/>
+  <!-- Legs/Trousers - olive green -->
+  <rect x="27" y="40" width="4" height="12" fill="#5a6b3a"/>
+  <rect x="33" y="40" width="4" height="12" fill="#4d5c30"/>
+  <!-- Torso - olive jacket -->
+  <rect x="24" y="27" width="16" height="16" rx="2" fill="#6b7a3e"/>
+  <!-- Left face shadow on torso -->
+  <rect x="24" y="27" width="5" height="16" rx="1" fill="#556030"/>
+  <!-- Belt -->
+  <rect x="24" y="40" width="16" height="2" fill="#8b6914"/>
+  <!-- Right arm + rifle -->
+  <rect x="40" y="27" width="3" height="14" rx="1" fill="#6b7a3e"/>
+  <!-- Rifle barrel -->
+  <rect x="41" y="15" width="2" height="18" rx="1" fill="#4a3728"/>
+  <!-- Rifle stock detail -->
+  <rect x="40" y="30" width="4" height="2" fill="#3d2b1f"/>
+  <!-- Left arm -->
+  <rect x="21" y="28" width="3" height="12" rx="1" fill="#556030"/>
+  <!-- Head/neck -->
+  <rect x="27" y="20" width="10" height="10" rx="2" fill="#c4a882"/>
+  <!-- Helmet - steel olive -->
+  <ellipse cx="32" cy="21" rx="8" ry="5" fill="#4a5530"/>
+  <!-- Helmet brim -->
+  <ellipse cx="32" cy="24" rx="9" ry="3" fill="#3d4825"/>
+  <!-- Face shadow -->
+  <rect x="27" y="24" width="4" height="6" fill="#b8956e"/>
+  <!-- Helmet highlight -->
+  <ellipse cx="30" cy="20" rx="3" ry="2" fill="#586638" opacity="0.6"/>
+  <!-- Pack on back (visible on left) -->
+  <rect x="19" y="28" width="5" height="10" rx="1" fill="#7a6b45"/>
+</svg>
