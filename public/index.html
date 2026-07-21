@@ -421,15 +421,16 @@
   /* Battle Log */
   /* battle-log-wrap is now inline-styled as a fixed overlay */
   .battle-entry {
-    font-size: 0.74rem;
-    line-height: 1.4;
-    padding: 3px 6px;
-    border-radius: 5px;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    padding: 2px 4px;
+    border-radius: 4px;
     background: rgba(255,255,255,0.03);
     border-left: 3px solid transparent;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 100%;
   }
   .battle-entry.p1-atk { border-left-color: var(--blue-light); }
   .battle-entry.p2-atk { border-left-color: var(--red-light); }
@@ -554,11 +555,14 @@
 
 <!-- Fixed End Turn button — always bottom-right, above everything -->
 <!-- Battle log overlay — shown/hidden via toggle button -->
-<div id="battle-log-wrap" style="position:fixed;top:56px;left:10px;right:10px;z-index:190;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:6px 10px;max-height:160px;overflow-y:auto;display:none;flex-direction:column;gap:2px;">
-  <div id="battle-log-label" style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">⚔️ Battle Log</div>
-  <div id="battle-log-entries"></div>
+<div id="battle-log-wrap" style="position:fixed;top:56px;left:10px;right:10px;z-index:190;background:rgba(22,27,34,0.96);border:1px solid var(--border);border-radius:10px;padding:4px 8px 4px 8px;display:none;flex-direction:column;gap:0;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+    <span style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">⚔️ Battle Log</span>
+    <button onclick="toggleBattleLog()" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;padding:0 2px;">✕</button>
+  </div>
+  <div id="battle-log-entries" style="max-height:90px;overflow-y:auto;"></div>
 </div>
-<button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;top:56px;left:10px;z-index:200;padding:6px 14px;font-size:0.78rem;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️ Log</button>
+<button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;top:56px;left:10px;z-index:200;padding:5px 12px;font-size:0.75rem;border-radius:8px;border:1px solid var(--border);background:rgba(22,27,34,0.9);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️</button>
 <button id="end-turn-btn" onclick="endTurn()">End Turn</button>
 
 <!-- End Screen -->
@@ -798,25 +802,16 @@ function getUnitSymbol(type) {
 
 function buildBattleEntryHTML(r) {
   var atkSym = getUnitSymbol(r.attackerType);
-  var defSym = getUnitSymbol(r.defenderType);
-  var atkColor = r.attackerOwner === 1 ? '#58a6ff' : '#f85149';
-  var defColor = r.defenderOwner === 1 ? '#58a6ff' : '#f85149';
-  // Short names for mobile
-  var atkName = '<span style="color:' + atkColor + '">P' + r.attackerOwner + ' ' + atkSym + '</span>';
-  var defName = '<span style="color:' + defColor + '">P' + r.defenderOwner + ' ' + defSym + '</span>';
-  var html = '';
-  if (r.outcome === 'fuel_crash') {
-    html = '⛽ ' + atkName + ' out of fuel — crashed!';
-  } else if (r.outcome === 'attacker_wins') {
-    html = '🗡️ ' + atkName + ' [' + r.attackerRoll + '≤' + r.attackerTarget + '] → ' + defName + ' destroyed';
-  } else if (r.outcome === 'mutual_kill') {
-    html = '💥 ' + atkName + ' ✕ ' + defName + ' — both destroyed';
-  } else if (r.outcome === 'defender_wins') {
-    html = '🛡️ ' + defName + ' [' + r.defenderRoll + '≤' + r.defenderTarget + '] → ' + atkName + ' destroyed';
-  } else {
-    html = '💨 ' + atkName + ' vs ' + defName + ' — miss';
-  }
-  return html;
+  var defSym = r.defenderType ? getUnitSymbol(r.defenderType) : '';
+  var ac = r.attackerOwner === 1 ? '#58a6ff' : '#f85149';
+  var dc = r.defenderOwner === 1 ? '#58a6ff' : '#f85149';
+  var a = '<b style="color:' + ac + '">P' + r.attackerOwner + '</b>' + atkSym;
+  var d = r.defenderType ? ('<b style="color:' + dc + '">P' + r.defenderOwner + '</b>' + defSym) : '';
+  if (r.outcome === 'fuel_crash')    return '⛽ ' + a + ' crashed';
+  if (r.outcome === 'attacker_wins') return '🗡️ ' + a + '→' + d + ' ✕';
+  if (r.outcome === 'mutual_kill')   return '💥 ' + a + '✕' + d + ' ✕ both';
+  if (r.outcome === 'defender_wins') return '🛡️ ' + d + '→' + a + ' ✕';
+  return '💨 ' + a + ' vs ' + d + ' miss';
 }
 
 function toggleBattleLog() {
