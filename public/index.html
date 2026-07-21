@@ -554,11 +554,11 @@
 
 <!-- Fixed End Turn button — always bottom-right, above everything -->
 <!-- Battle log overlay — shown/hidden via toggle button -->
-<div id="battle-log-wrap" style="position:fixed;bottom:80px;right:20px;left:20px;z-index:190;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px 10px;max-height:200px;overflow-y:auto;display:none;flex-direction:column;gap:3px;">
-  <div id="battle-log-label" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">⚔️ Battle Log</div>
+<div id="battle-log-wrap" style="position:fixed;top:56px;left:10px;right:10px;z-index:190;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:6px 10px;max-height:160px;overflow-y:auto;display:none;flex-direction:column;gap:2px;">
+  <div id="battle-log-label" style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">⚔️ Battle Log</div>
   <div id="battle-log-entries"></div>
 </div>
-<button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;bottom:80px;left:20px;z-index:200;padding:10px 18px;font-size:0.82rem;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️ Log</button>
+<button id="battle-log-toggle" onclick="toggleBattleLog()" style="position:fixed;top:56px;left:10px;z-index:200;padding:6px 14px;font-size:0.78rem;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;">⚔️ Log</button>
 <button id="end-turn-btn" onclick="endTurn()">End Turn</button>
 
 <!-- End Screen -->
@@ -801,31 +801,20 @@ function buildBattleEntryHTML(r) {
   var defSym = getUnitSymbol(r.defenderType);
   var atkColor = r.attackerOwner === 1 ? '#58a6ff' : '#f85149';
   var defColor = r.defenderOwner === 1 ? '#58a6ff' : '#f85149';
-  var atkName = 'P' + r.attackerOwner + ' ' + capitalize(r.attackerType);
-  var defName = 'P' + r.defenderOwner + ' ' + capitalize(r.defenderType);
-
+  // Short names for mobile
+  var atkName = '<span style="color:' + atkColor + '">P' + r.attackerOwner + ' ' + atkSym + '</span>';
+  var defName = '<span style="color:' + defColor + '">P' + r.defenderOwner + ' ' + defSym + '</span>';
   var html = '';
-  if (r.outcome === 'attacker_wins') {
-    html = '🗡️ <span style="color:' + atkColor + '">' + atkSym + ' ' + atkName + '</span>'
-      + ' 🎲' + r.attackerRoll + '≤' + r.attackerTarget + ' <b>HIT</b> — '
-      + '<span style="color:' + defColor + '">' + defSym + ' ' + defName + '</span>'
-      + ' 🎲' + r.defenderRoll + ' (need ≤' + r.defenderTarget + ') miss. Defender destroyed!';
+  if (r.outcome === 'fuel_crash') {
+    html = '⛽ ' + atkName + ' out of fuel — crashed!';
+  } else if (r.outcome === 'attacker_wins') {
+    html = '🗡️ ' + atkName + ' [' + r.attackerRoll + '≤' + r.attackerTarget + '] → ' + defName + ' destroyed';
   } else if (r.outcome === 'mutual_kill') {
-    html = '💥 <span style="color:' + atkColor + '">' + atkSym + ' ' + atkName + '</span>'
-      + ' 🎲' + r.attackerRoll + '≤' + r.attackerTarget + ' <b>HIT</b> — '
-      + '<span style="color:' + defColor + '">' + defSym + ' ' + defName + '</span>'
-      + ' 🎲' + r.defenderRoll + '≤' + r.defenderTarget + ' <b>HIT</b> — Both destroyed!';
+    html = '💥 ' + atkName + ' ✕ ' + defName + ' — both destroyed';
   } else if (r.outcome === 'defender_wins') {
-    html = '💨 <span style="color:' + atkColor + '">' + atkSym + ' ' + atkName + '</span>'
-      + ' 🎲' + r.attackerRoll + ' (need ≤' + r.attackerTarget + ') miss — '
-      + '<span style="color:' + defColor + '">' + defSym + ' ' + defName + '</span>'
-      + ' 🎲' + r.defenderRoll + '≤' + r.defenderTarget + ' <b>HIT</b> — Attacker destroyed!';
+    html = '🛡️ ' + defName + ' [' + r.defenderRoll + '≤' + r.defenderTarget + '] → ' + atkName + ' destroyed';
   } else {
-    // both_missed
-    html = '💨 <span style="color:' + atkColor + '">' + atkSym + ' ' + atkName + '</span>'
-      + ' 🎲' + r.attackerRoll + ' miss — '
-      + '<span style="color:' + defColor + '">' + defSym + ' ' + defName + '</span>'
-      + ' 🎲' + r.defenderRoll + ' miss — No casualties.';
+    html = '💨 ' + atkName + ' vs ' + defName + ' — miss';
   }
   return html;
 }
@@ -2507,12 +2496,19 @@ function onCanvasTap(sx, sy) {
 
   // Nothing selected - select
   if (myUnitsAtTile.length === 1) {
-    selectedUnit = myUnitsAtTile[0];
-    selectedCityPos = null;
-    render(); updateHUD(); return;
+    // If it's also an owned city, offer city selection too
+    if (tile.type === 'city' && tile.city && tile.city.owner === myPlayerNum) {
+      showUnitPicker(myUnitsAtTile, sx, sy, { x: tx, y: ty });
+    } else {
+      selectedUnit = myUnitsAtTile[0];
+      selectedCityPos = null;
+      render(); updateHUD();
+    }
+    return;
   }
   if (myUnitsAtTile.length > 1) {
-    showUnitPicker(myUnitsAtTile, sx, sy);
+    var cityPos = (tile.type === 'city' && tile.city && tile.city.owner === myPlayerNum) ? { x: tx, y: ty } : null;
+    showUnitPicker(myUnitsAtTile, sx, sy, cityPos);
     return;
   }
 
@@ -2527,7 +2523,7 @@ function onCanvasTap(sx, sy) {
 }
 
 // ── Unit Picker Popup ──────────────────────────────────────────────────────
-function showUnitPicker(units, sx, sy) {
+function showUnitPicker(units, sx, sy, cityPos) {
   var picker = document.getElementById('unit-picker');
   var list = document.getElementById('picker-list');
   list.innerHTML = '';
@@ -2550,7 +2546,26 @@ function showUnitPicker(units, sx, sy) {
     list.appendChild(item);
   });
 
-  var pw = 160, ph = units.length * 52 + 32;
+  // Add city option if this is an owned city
+  if (cityPos) {
+    var cityItem = document.createElement('div');
+    cityItem.className = 'picker-unit';
+    cityItem.innerHTML = '<span class="pu-sym">🏙️</span>' +
+      '<span class="pu-info"><span class="pu-name">Select City</span>' +
+      '<span class="pu-moves">Change production</span></span>';
+    cityItem.onclick = (function(cp) {
+      return function() {
+        selectedCityPos = cp;
+        selectedUnit = null;
+        hideUnitPicker();
+        render();
+        updateHUD();
+      };
+    })(cityPos);
+    list.appendChild(cityItem);
+  }
+
+  var pw = 160, ph = (units.length + (cityPos ? 1 : 0)) * 52 + 32;
   var px = Math.min(sx, window.innerWidth - pw - 10);
   var py = Math.min(sy, window.innerHeight - ph - 10);
   picker.style.left = px + 'px';

@@ -112,7 +112,7 @@ function generateMap(mapW, mapH) {
     }
   }
   const sorted = inBoundValues.slice().sort((a, b) => a - b);
-  const threshold = sorted[Math.floor(sorted.length * 0.70)];
+  const threshold = sorted[Math.floor(sorted.length * 0.52)]; // ~48% land (was 30%)
 
   for (let y = 0; y < H; y++) {
     tiles.push([]);
@@ -162,6 +162,13 @@ function generateMap(mapW, mapH) {
 
   const cities = [];
   const minDist = 4;
+  const maxCityDist = 10; // cities should be reachable within 10 tiles of another city
+
+  function placeCity(cx, cy) {
+    cities.push([cx, cy]);
+    tiles[cy][cx].type = 'city';
+    tiles[cy][cx].city = { owner: null, production: null, progress: 0, id: cities.length-1, coastal: isCoastal(cx,cy) };
+  }
 
   function tryPlaceCity(candidates) {
     shuffle(candidates);
@@ -169,12 +176,7 @@ function generateMap(mapW, mapH) {
       let tooClose = false;
       for (const [ex, ey] of cities)
         if (hexDistance(cx, cy, ex, ey) < minDist) { tooClose = true; break; }
-      if (!tooClose) {
-        cities.push([cx, cy]);
-        tiles[cy][cx].type = 'city';
-        tiles[cy][cx].city = { owner: null, production: null, progress: 0, id: cities.length-1, coastal: isCoastal(cx,cy) };
-        return true;
-      }
+      if (!tooClose) { placeCity(cx, cy); return true; }
     }
     return false;
   }
@@ -185,8 +187,28 @@ function generateMap(mapW, mapH) {
     const inland  = mass.filter(([x,y]) => !isCoastal(x,y));
     tryPlaceCity(coastal);
     const remaining = [...coastal, ...inland];
-    const slotsForMass = Math.max(0, Math.floor(mass.length / 15));
+    // More cities per landmass (was /15, now /8)
+    const slotsForMass = Math.max(0, Math.floor(mass.length / 8));
     for (let i = 0; i < slotsForMass; i++) tryPlaceCity(remaining);
+  }
+
+  // Ensure no land tile is more than maxCityDist from a city — add gap-fillers
+  const allLandTiles = [];
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      const t = tiles[y][x];
+      if (t.type === 'land') allLandTiles.push([x, y]);
+    }
+  shuffle(allLandTiles);
+  for (const [lx, ly] of allLandTiles) {
+    const nearCity = cities.some(([cx, cy]) => hexDistance(lx, ly, cx, cy) <= maxCityDist);
+    if (!nearCity) {
+      // Place a city here if it's not too close to existing ones
+      let tooClose = false;
+      for (const [ex, ey] of cities)
+        if (hexDistance(lx, ly, ex, ey) < minDist) { tooClose = true; break; }
+      if (!tooClose) placeCity(lx, ly);
+    }
   }
 
   for (const [cx, cy] of cities)
@@ -1562,19 +1584,37 @@ io.on('connection', socket => {
     const movedUnit = state.units.find(u => u.id === unitId);
     if (movedUnit) {
       const newTile = state.tiles[movedUnit.y][movedUnit.x];
+
+      // Refuel check: friendly city or carrier
+      if (movedUnit.fuel !== null) {
+        const onFriendlyCarrier = state.units.some(u => u !== movedUnit && u.owner === pnum && u.type === 'carrier' && u.x === movedUnit.x && u.y === movedUnit.y);
+        const onFriendlyCity = newTile.type === 'city' && newTile.city && newTile.city.owner === pnum;
+        if (onFriendlyCity || onFriendlyCarrier) {
+          movedUnit.fuel = UNIT_DEFS[movedUnit.type].fuel;
+        } else if (movedUnit.fuel <= 0) {
+          // Out of fuel with no safe landing — crash immediately
+          state.units = state.units.filter(u => u.id !== movedUnit.id);
+          io.to(state.roomCode).emit('battleReport', {
+            attackerType: movedUnit.type, attackerOwner: movedUnit.owner,
+            defenderType: null, defenderOwner: null,
+            outcome: 'fuel_crash', location: { x: movedUnit.x, y: movedUnit.y }
+          });
+          checkWin(state);
+          broadcastState(state);
+          return;
+        }
+      }
+
       if (newTile.type === 'city' && newTile.city) {
         const capDef = UNIT_DEFS[movedUnit.type];
         if (capDef && capDef.canCapture && newTile.city.owner !== pnum) {
           newTile.city.owner = pnum;
-          newTile.city.production = 'army'; // default to infantry on capture
+          newTile.city.production = 'army';
           newTile.city.progress = 0;
           state.units = state.units.filter(u => u.id !== movedUnit.id);
           checkWin(state);
           broadcastState(state);
           return;
-        }
-        if (movedUnit.fuel !== null && newTile.city.owner === pnum) {
-          movedUnit.fuel = UNIT_DEFS[movedUnit.type].fuel;
         }
       }
 
