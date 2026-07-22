@@ -724,12 +724,16 @@ function runAILevel3(state) {
     const needFighters = enemyHasAir && (aiCounts['fighter'] || 0) < 2;
     const hasTransport = (aiCounts['transport'] || 0) > 0;
 
+    const hasFighter = (aiCounts['fighter'] || 0) > 0;
+    const hasBomber  = (aiCounts['bomber']  || 0) > 0;
     let prod;
-    if (isCoastal && !hasTransport) prod = 'transport'; // always build transport on coast — naval access matters
-    else if (needFighters && isCoastal) prod = 'fighter';
+    if (isCoastal && !hasTransport) prod = 'transport';       // guarantee naval escape
+    else if (!hasFighter) prod = 'fighter';                    // always have at least 1 fighter for scouting
+    else if (needFighters) prod = 'fighter';
     else if ((aiCounts['tank'] || 0) < 2) prod = 'tank';
-    else if (isCoastal && needNaval && (aiCounts['destroyer'] || 0) < 1) prod = 'destroyer';
-    else prod = Math.random() < 0.5 ? 'tank' : 'army';
+    else if (!hasBomber && isCoastal) prod = 'bomber';         // bomber for cross-water pressure
+    else if (isCoastal && (aiCounts['destroyer'] || 0) < 1) prod = 'destroyer';
+    else prod = Math.random() < 0.6 ? 'tank' : 'army';
 
     tile.city.production = prod;
     tile.city.progress = 0;
@@ -808,6 +812,30 @@ function runAILevel3(state) {
       const base = nearestSafeBase(unit);
       if (base) {
         const step = aiBFS(state, unit.x, unit.y, base.x, base.y, domain);
+        if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); continue; }
+      }
+    }
+
+    // ── Air units: scout unexplored territory (ignores terrain, crosses water) ──
+    if (domain === 'air' && p1Units.length === 0 && unit.movesLeft > 0 && !unit.hasAttacked) {
+      // No known enemies — fly toward unexplored map center or farthest unknown tile
+      let bestEx = null, bestExD = -1;
+      const searchR = def.move; // air can reach far
+      for (let dy = -searchR; dy <= searchR; dy++) {
+        for (let dx = -searchR; dx <= searchR; dx++) {
+          const ex = unit.x + dx, ey = unit.y + dy;
+          if (ex < 0 || ex >= mapW || ey < 0 || ey >= mapH) continue;
+          const ek = ey * mapW + ex;
+          if (aiVisible.has(ek) || (aiExplored && aiExplored.has(ek))) continue;
+          const tile = state.tiles[ey][ex];
+          if (!tile || tile.type === 'void') continue;
+          // Prefer tiles far from current position (max exploration reach)
+          const d = hexDistance(unit.x, unit.y, ex, ey);
+          if (d > bestExD && d <= def.move) { bestExD = d; bestEx = { x: ex, y: ey }; }
+        }
+      }
+      if (bestEx) {
+        const step = aiBFS(state, unit.x, unit.y, bestEx.x, bestEx.y, 'air');
         if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); continue; }
       }
     }
@@ -970,7 +998,8 @@ function runAILevel3(state) {
             if (d < bestExD) { bestExD = d; bestEx = { x: ex, y: ey }; }
           }
         }
-        target = bestEx || findNearestCoastalLand(state, transport.x, transport.y);
+        // If no unexplored ocean found, sail toward map center to find enemy
+        target = bestEx || { x: Math.floor(mapW / 2), y: Math.floor(mapH / 2) };
       }
       if (target) {
         const step = aiBFS(state, transport.x, transport.y, target.x, target.y, 'sea');
