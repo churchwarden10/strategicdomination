@@ -2555,6 +2555,10 @@ function updateHUD() {
 
       if (u.type === 'transport' && u.owner === myPlayerNum) {
         updateTransportUI(u, state);
+      } else {
+        // Hide transport UI when something else is selected
+        var _ta = document.getElementById('transport-actions');
+        if (_ta) _ta.style.display = 'none';
       }
 
       // (Bomber AoE removed — bombers now use standard single-target attack)
@@ -2630,7 +2634,8 @@ function updateTransportUI(transport, state) {
   }
   var capacity = 3; // infantry=1 slot, tank=2 slots; max 3 slots (1 inf + 1 tank, or 3 inf)
 
-  if (sameTileUnits.length > 0 && usedSlots < capacity) {
+  // Bug fix: only show Load buttons when transport has moves remaining
+  if (transport.movesLeft > 0 && sameTileUnits.length > 0 && usedSlots < capacity) {
     sameTileUnits.forEach(function(lu) {
       var slots = (lu.type === 'tank') ? 2 : 1;
       if (usedSlots + slots <= capacity) {
@@ -2658,7 +2663,7 @@ function updateTransportUI(transport, state) {
         var ub = document.createElement('button');
         ub.className = 'btn-sm green';
         var isActive = unloadTransportId === transport.id && unloadCargoIndex === ci;
-        ub.textContent = (isActive ? '✅ ' : '') + 'Unload ' + (cargoUnit.symbol || '') + ' ' + getUnitDisplayName(cargoUnit.type);
+        ub.textContent = (isActive ? '\u2705 ' : '') + 'Unload ' + (cargoUnit.symbol || '') + ' ' + getUnitDisplayName(cargoUnit.type);
         ub.style.border = isActive ? '2px solid #3fdc64' : '';
         ub.onclick = (function(cIdx) {
           return function() {
@@ -2677,6 +2682,38 @@ function updateTransportUI(transport, state) {
           };
         })(ci);
         btns.appendChild(ub);
+      });
+    }
+
+    // Attack buttons: cargo units can attack adjacent enemies from transport
+    var adjEnemies = [];
+    hexNeighbors(transport.x, transport.y).forEach(function(nb) {
+      var enemiesHere = state.units.filter(function(u) {
+        return u.owner !== myPlayerNum && u.x === nb.x && u.y === nb.y;
+      });
+      enemiesHere.forEach(function(e) { adjEnemies.push(e); });
+    });
+    if (adjEnemies.length > 0) {
+      transport.cargo.forEach(function(cargoUnit, ci) {
+        if (cargoUnit.hasAttacked) return;
+        adjEnemies.forEach(function(enemy) {
+          var ab = document.createElement('button');
+          ab.className = 'btn-sm';
+          ab.style.background = 'var(--red)';
+          ab.textContent = '\u2694\ufe0f ' + (cargoUnit.symbol || getUnitDisplayName(cargoUnit.type)) + ' \u2192 ' + (enemy.symbol || getUnitDisplayName(enemy.type));
+          ab.onclick = (function(cIdx, ex, ey) {
+            return function() {
+              socket.emit('attackFromCargo', {
+                roomCode: myRoom,
+                transportId: transport.id,
+                cargoIndex: cIdx,
+                defenderX: ex,
+                defenderY: ey
+              });
+            };
+          })(ci, enemy.x, enemy.y);
+          btns.appendChild(ab);
+        });
       });
     }
   }
@@ -3053,11 +3090,9 @@ function onCanvasTap(sx, sy) {
           startAirHold(su.id, tx, ty, sx, sy);
           return;
         }
-        var _keepId = su.id;
         socket.emit('moveUnit', { roomCode: myRoom, unitId: su.id, toX: tx, toY: ty });
-        // Keep unit selected after move so player can attack without re-selecting
-        // selectedUnit will be refreshed from stateUpdate; store id to re-select
-        _pendingReselect = _keepId;
+        // Deselect unit after move (Bug fix: was keeping unit selected)
+        clearSelection();
         selectedCityPos = null;
         return;
       }

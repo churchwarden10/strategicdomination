@@ -561,8 +561,9 @@ function advanceTurn(state) {
       if (tile.type !== 'city' || !tile.city) continue;
       const city = tile.city;
       if (!city.owner || !city.production) continue;
-      city.progress++;
       const buildTime = UNIT_DEFS[city.production] ? UNIT_DEFS[city.production].buildTime : 99;
+      // Only increment if not yet at buildTime (avoids over-counting when tile is blocked)
+      if (city.progress < buildTime) city.progress++;
       if (city.progress >= buildTime) {
         const spawned = spawnUnit(state, city.owner, city.production, x, y);
         if (spawned) city.progress = 0; // only reset if spawn succeeded; retry next turn if tile was full
@@ -1250,8 +1251,9 @@ function finishAITurn(state) {
       if (tile.type !== 'city' || !tile.city) continue;
       const city = tile.city;
       if (!city.owner || !city.production) continue;
-      city.progress++;
       const buildTime = UNIT_DEFS[city.production] ? UNIT_DEFS[city.production].buildTime : 99;
+      // Only increment if not yet at buildTime (avoids over-counting when tile is blocked)
+      if (city.progress < buildTime) city.progress++;
       if (city.progress >= buildTime) {
         const spawned = spawnUnit(state, city.owner, city.production, x, y);
         if (spawned) city.progress = 0;
@@ -1665,6 +1667,18 @@ io.on('connection', socket => {
         if (stillThere) { broadcastState(state); return; }
       }
 
+      // Bug fix: air units cannot land on enemy or neutral cities
+      const isEnemyCityDest = destTile.type === 'city' && destTile.city &&
+        destTile.city.owner !== pnum && destTile.city.owner !== null;
+      const isNeutralCityDest = destTile.type === 'city' && destTile.city && destTile.city.owner === null;
+      if (def.domain === 'air' && (isEnemyCityDest || isNeutralCityDest)) {
+        // Attacked any units here already — just consume a move but don't land
+        unit.movesLeft = Math.max(0, unit.movesLeft - 1);
+        if (unit.fuel !== null) unit.fuel = Math.max(0, unit.fuel - 1);
+        broadcastState(state);
+        return;
+      }
+
       unit.x = toX;
       unit.y = toY;
       unit.movesLeft = Math.max(0, unit.movesLeft - 1);
@@ -1922,6 +1936,57 @@ io.on('connection', socket => {
           });
         }
       }
+    }
+
+    checkWin(state);
+    broadcastState(state);
+  });
+
+  // ── Attack from transport cargo ────────────────────────────────────────────
+  // Allows a unit stored in a transport's cargo to attack an adjacent enemy.
+  socket.on('attackFromCargo', ({ roomCode, transportId, cargoIndex, defenderX, defenderY }) => {
+    const state = games.get(roomCode);
+    if (!state || state.phase !== 'playing') return;
+    const player = state.players[socket.id];
+    if (!player) return;
+    const pnum = player.id;
+    if (!state.vsComputer && state.activePlayer !== pnum) return;
+
+    const transport = state.units.find(u => u.id === transportId && u.owner === pnum && u.type === 'transport');
+    if (!transport) return socket.emit('moveError', 'Transport not found');
+    if (!transport.cargo || cargoIndex < 0 || cargoIndex >= transport.cargo.length)
+      return socket.emit('moveError', 'Invalid cargo index');
+
+    const cargoUnit = transport.cargo[cargoIndex];
+    if (cargoUnit.hasAttacked) return socket.emit('moveError', 'Unit already attacked this turn');
+
+    // Defender must be adjacent to the transport
+    const neighbors = hexNeighbors(transport.x, transport.y, state.mapW || MAP_W, state.mapH || MAP_H);
+    const isAdj = neighbors.some(n => n.x === defenderX && n.y === defenderY);
+    if (!isAdj) return socket.emit('moveError', 'Target not adjacent to transport');
+
+    const defenders = state.units.filter(u => u.owner !== pnum && u.x === defenderX && u.y === defenderY);
+    if (defenders.length === 0) return socket.emit('moveError', 'No enemy at target');
+
+    const defender = defenders[0];
+
+    // Temporarily place the cargo unit on the board at the transport's position so resolveCombat works
+    const tempAttacker = { ...cargoUnit, x: transport.x, y: transport.y };
+    state.units.push(tempAttacker);
+
+    resolveCombat(state, tempAttacker, defender);
+
+    // Sync HP and hasAttacked back to cargo unit; handle destruction
+    const attackerStillAlive = state.units.find(u => u.id === tempAttacker.id);
+    if (attackerStillAlive) {
+      // Update cargo unit with new HP
+      cargoUnit.hp = attackerStillAlive.hp;
+      cargoUnit.hasAttacked = true;
+      // Remove the temp unit from the board (it lives in cargo)
+      state.units = state.units.filter(u => u.id !== tempAttacker.id);
+    } else {
+      // Attacker was destroyed — remove from cargo too
+      transport.cargo.splice(cargoIndex, 1);
     }
 
     checkWin(state);
