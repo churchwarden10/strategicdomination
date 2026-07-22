@@ -715,6 +715,29 @@ function runAILevel3(state) {
   );
   const needNaval = enemyCities.length > 0 && !enemyReachableByLand && landAI.length > 0;
 
+  // ── Island exploration status ──────────────────────────────────────────────
+  // BFS the landmass each friendly city sits on to check if fully explored
+  function isLandmassFullyExplored(startX, startY) {
+    const visited = new Set();
+    const queue = [[startX, startY]];
+    visited.add(startY * mapW + startX);
+    while (queue.length) {
+      const [cx, cy] = queue.shift();
+      const key = cy * mapW + cx;
+      // If this land tile is unexplored by AI, landmass is NOT fully explored
+      if (!aiVisible.has(key) && !(aiExplored && aiExplored.has(key))) return false;
+      for (const nb of hexNeighbors(cx, cy, mapW, mapH)) {
+        const nk = nb.y * mapW + nb.x;
+        if (visited.has(nk)) continue;
+        const t = state.tiles[nb.y][nb.x];
+        if (!t || (t.type !== 'land' && t.type !== 'city')) continue;
+        visited.add(nk);
+        queue.push([nb.x, nb.y]);
+      }
+    }
+    return true; // every land tile on this mass is explored
+  }
+
   // ── Production ──────────────────────────────────────────────────────────
   for (const cp of friendlyCities) {
     const tile = cp.tile;
@@ -723,17 +746,35 @@ function runAILevel3(state) {
     const enemyHasAir = p1Units.some(u => u.type === 'fighter' || u.type === 'bomber');
     const needFighters = enemyHasAir && (aiCounts['fighter'] || 0) < 2;
     const hasTransport = (aiCounts['transport'] || 0) > 0;
-
     const hasFighter = (aiCounts['fighter'] || 0) > 0;
     const hasBomber  = (aiCounts['bomber']  || 0) > 0;
+
+    // Is this city's island fully explored? If so, no point building land units.
+    const islandExplored = isLandmassFullyExplored(cp.x, cp.y);
+
     let prod;
-    if (isCoastal && !hasTransport) prod = 'transport';       // guarantee naval escape
-    else if (!hasFighter) prod = 'fighter';                    // always have at least 1 fighter for scouting
-    else if (needFighters) prod = 'fighter';
-    else if ((aiCounts['tank'] || 0) < 2) prod = 'tank';
-    else if (!hasBomber && isCoastal) prod = 'bomber';         // bomber for cross-water pressure
-    else if (isCoastal && (aiCounts['destroyer'] || 0) < 1) prod = 'destroyer';
-    else prod = Math.random() < 0.6 ? 'tank' : 'army';
+    if (isCoastal && !hasTransport) {
+      // Coastal city: first priority is always a transport for naval crossing
+      prod = 'transport';
+    } else if (isCoastal) {
+      // Coastal cities focus on naval crossing: more transports, destroyers for escort
+      if (!hasFighter) prod = 'fighter';
+      else if (!hasBomber) prod = 'bomber';
+      else if ((aiCounts['transport'] || 0) < Math.max(2, Math.floor(friendlyCities.length / 3))) prod = 'transport';
+      else if ((aiCounts['destroyer'] || 0) < 1) prod = 'destroyer';
+      else prod = 'bomber';
+    } else if (islandExplored) {
+      // Inland city on fully-explored island: only air units (they can reach enemy)
+      if (!hasFighter) prod = 'fighter';
+      else if (!hasBomber) prod = 'bomber';
+      else prod = Math.random() < 0.6 ? 'fighter' : 'bomber';
+    } else {
+      // Inland city, island still being explored: build land units to explore + hold
+      if (!hasFighter) prod = 'fighter';
+      else if (needFighters) prod = 'fighter';
+      else if ((aiCounts['tank'] || 0) < 2) prod = 'tank';
+      else prod = Math.random() < 0.6 ? 'tank' : 'army';
+    }
 
     tile.city.production = prod;
     tile.city.progress = 0;
@@ -846,6 +887,43 @@ function runAILevel3(state) {
       if (base && hexDistance(unit.x, unit.y, base.x, base.y) > 1) {
         const step = aiBFS(state, unit.x, unit.y, base.x, base.y, domain);
         if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); continue; }
+      }
+    }
+
+    // ── Land units on fully-explored island: head to nearest transport or coast ──
+    if (domain === 'land' && unit.movesLeft > 0) {
+      if (isLandmassFullyExplored(unit.x, unit.y)) {
+        // Find a friendly transport to board, or the nearest coastal tile
+        const nearbyTransport = state.units.find(u =>
+          u.owner === 2 && u.type === 'transport' &&
+          hexDistance(unit.x, unit.y, u.x, u.y) <= 6
+        );
+        const boardTarget = nearbyTransport ? { x: nearbyTransport.x, y: nearbyTransport.y } : null;
+        if (boardTarget && !(unit.x === boardTarget.x && unit.y === boardTarget.y)) {
+          const step = aiBFS(state, unit.x, unit.y, boardTarget.x, boardTarget.y, domain);
+          if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); continue; }
+        }
+        // No transport nearby — move toward nearest coastal tile
+        if (!boardTarget) {
+          let bestCoast = null, bestCoastD = Infinity;
+          for (let dy = -8; dy <= 8; dy++) {
+            for (let dx = -8; dx <= 8; dx++) {
+              const cx2 = unit.x + dx, cy2 = unit.y + dy;
+              if (cx2 < 0 || cx2 >= mapW || cy2 < 0 || cy2 >= mapH) continue;
+              const t = state.tiles[cy2][cx2];
+              if (!t || (t.type !== 'land' && t.type !== 'city')) continue;
+              // Check if adjacent to ocean
+              const adjOcean = hexNeighbors(cx2, cy2, mapW, mapH).some(nb => state.tiles[nb.y][nb.x]?.type === 'ocean');
+              if (!adjOcean) continue;
+              const d = hexDistance(unit.x, unit.y, cx2, cy2);
+              if (d < bestCoastD) { bestCoastD = d; bestCoast = { x: cx2, y: cy2 }; }
+            }
+          }
+          if (bestCoast) {
+            const step = aiBFS(state, unit.x, unit.y, bestCoast.x, bestCoast.y, domain);
+            if (step) { doMove(state, unit, step.x, step.y); movedIds.add(unit.id); continue; }
+          }
+        }
       }
     }
 
