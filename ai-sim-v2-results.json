@@ -1,0 +1,61 @@
+{
+  "p1Wins": 0,
+  "p2Wins": 0,
+  "timeouts": 5,
+  "decisive": 0,
+  "numGames": 5,
+  "avgTurns": 301,
+  "avgFirstContact": 12.5,
+  "avgAttacksPerTurn": 5.68,
+  "avgCitiesP1": 37.2,
+  "avgCitiesP2": 35,
+  "avgUnitsLostP1": 353.6,
+  "avgUnitsLostP2": 348.4,
+  "results": [
+    {
+      "game": 1,
+      "winner": null,
+      "turns": 301,
+      "firstContact": 12,
+      "attacks": 2860,
+      "citiesP1": 4,
+      "citiesP2": 4
+    },
+    {
+      "game": 2,
+      "winner": null,
+      "turns": 301,
+      "firstContact": 19,
+      "attacks": 1635,
+      "citiesP1": 8,
+      "citiesP2": 4
+    },
+    {
+      "game": 3,
+      "winner": null,
+      "turns": 301,
+      "firstContact": 10,
+      "attacks": 2240,
+      "citiesP1": 4,
+      "citiesP2": 4
+    },
+    {
+      "game": 4,
+      "winner": null,
+      "turns": 301,
+      "firstContact": 9,
+      "attacks": 1807,
+      "citiesP1": 3,
+      "citiesP2": 2
+    },
+    {
+      "game": 5,
+      "winner": null,
+      "turns": 301,
+      "firstContact": null,
+      "attacks": 0,
+      "citiesP1": 7,
+      "citiesP2": 1
+    }
+  ]
+}

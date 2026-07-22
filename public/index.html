@@ -1263,7 +1263,8 @@ function showEndScreen(state) {
     var isWinner = state.winner === myPlayerNum;
     document.getElementById('end-icon').textContent = isWinner ? '🏆' : '💀';
     document.getElementById('end-title').textContent = isWinner ? 'Victory!' : 'Defeat';
-    document.getElementById('win-msg').textContent = isWinner ? 'You conquered all enemy cities!' : 'Your empire has fallen.';
+    var reason = state.winReason === 'dominance' ? (isWinner ? 'City dominance — 80% held for 5 turns!' : 'Enemy achieved city dominance.') : (isWinner ? 'Total annihilation!' : 'Your empire has fallen.');
+    document.getElementById('win-msg').textContent = reason;
   }, 500);
 }
 

@@ -547,9 +547,9 @@ function advanceTurn(state) {
     if (unit.owner === nextPlayer) {
       unit.movesLeft = UNIT_DEFS[unit.type].move;
       unit.hasAttacked = false;
-      // HP regeneration: ceil(maxHp / 3) per turn, capped at maxHp
+      // HP regeneration: 20% per turn, capped at maxHp
       if (unit.hp != null && unit.maxHp != null && unit.hp < unit.maxHp) {
-        const regen = Math.ceil(unit.maxHp / 3);
+        const regen = Math.ceil(unit.maxHp * 0.20);
         unit.hp = Math.min(unit.maxHp, unit.hp + regen);
       }
     }
@@ -604,21 +604,38 @@ function advanceTurn(state) {
 function checkWin(state) {
   const p1Cities = countCities(state, 1);
   const p2Cities = countCities(state, 2);
+  const totalCities = p1Cities + p2Cities + countCities(state, 0);
   const p1Units = state.units.filter(u => u.owner === 1).length;
   const p2Units = state.units.filter(u => u.owner === 2).length;
 
-  // Win = enemy has no cities AND no units left
-  // (can't produce anything, can't fight back)
-  if (p2Cities === 0 && p2Units === 0) {
-    state.winner = 1;
+  function declareWinner(winner, reason) {
+    state.winner = winner;
+    state.winReason = reason;
     state.phase = 'ended';
     clearTimeout(state.turnTimer);
     scheduleGameCleanup(state);
-  } else if (p1Cities === 0 && p1Units === 0) {
-    state.winner = 2;
-    state.phase = 'ended';
-    clearTimeout(state.turnTimer);
-    scheduleGameCleanup(state);
+  }
+
+  // Annihilation win: enemy has no cities AND no units
+  if (p2Cities === 0 && p2Units === 0) return declareWinner(1, 'annihilation');
+  if (p1Cities === 0 && p1Units === 0) return declareWinner(2, 'annihilation');
+
+  // Dominance win: hold 80%+ of all cities for 5 consecutive turns
+  if (totalCities > 0) {
+    if (!state.dominanceTurns) state.dominanceTurns = { 1: 0, 2: 0 };
+    const threshold = totalCities * 0.8;
+    if (p1Cities >= threshold) {
+      state.dominanceTurns[1]++;
+      state.dominanceTurns[2] = 0;
+      if (state.dominanceTurns[1] >= 5) return declareWinner(1, 'dominance');
+    } else if (p2Cities >= threshold) {
+      state.dominanceTurns[2]++;
+      state.dominanceTurns[1] = 0;
+      if (state.dominanceTurns[2] >= 5) return declareWinner(2, 'dominance');
+    } else {
+      state.dominanceTurns[1] = 0;
+      state.dominanceTurns[2] = 0;
+    }
   }
 }
 
@@ -1095,7 +1112,7 @@ function finishAITurn(state) {
       unit.movesLeft = UNIT_DEFS[unit.type].move;
       unit.hasAttacked = false;
       if (unit.hp != null && unit.maxHp != null && unit.hp < unit.maxHp) {
-        unit.hp = Math.min(unit.maxHp, unit.hp + Math.ceil(unit.maxHp / 3));
+        unit.hp = Math.min(unit.maxHp, unit.hp + Math.ceil(unit.maxHp * 0.20));
       }
     }
   }
