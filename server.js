@@ -725,7 +725,7 @@ function runAILevel3(state) {
     const hasTransport = (aiCounts['transport'] || 0) > 0;
 
     let prod;
-    if (needNaval && isCoastal && !hasTransport) prod = 'transport';
+    if (isCoastal && !hasTransport) prod = 'transport'; // always build transport on coast — naval access matters
     else if (needFighters && isCoastal) prod = 'fighter';
     else if ((aiCounts['tank'] || 0) < 2) prod = 'tank';
     else if (isCoastal && needNaval && (aiCounts['destroyer'] || 0) < 1) prod = 'destroyer';
@@ -953,7 +953,25 @@ function runAILevel3(state) {
   for (const transport of state.units) {
     if (transport.owner !== 2 || transport.type !== 'transport' || movedIds.has(transport.id)) continue;
     if (transport.cargo && transport.cargo.length > 0) {
-      const target = enemyCities.length > 0 ? enemyCities[0] : findNearestCoastalLand(state, transport.x, transport.y);
+      // Head toward known enemy city, or explore toward unexplored ocean
+      let target = enemyCities.length > 0 ? enemyCities[0] : null;
+      if (!target) {
+        // Find nearest unexplored ocean tile to scout
+        let bestEx = null, bestExD = Infinity;
+        for (let dy = -15; dy <= 15; dy++) {
+          for (let dx = -15; dx <= 15; dx++) {
+            const ex = transport.x + dx, ey = transport.y + dy;
+            if (ex < 0 || ex >= mapW || ey < 0 || ey >= mapH) continue;
+            const ek = ey * mapW + ex;
+            if (aiVisible.has(ek) || (aiExplored && aiExplored.has(ek))) continue;
+            const tile = state.tiles[ey][ex];
+            if (!tile || tile.type === 'void') continue;
+            const d = hexDistance(transport.x, transport.y, ex, ey);
+            if (d < bestExD) { bestExD = d; bestEx = { x: ex, y: ey }; }
+          }
+        }
+        target = bestEx || findNearestCoastalLand(state, transport.x, transport.y);
+      }
       if (target) {
         const step = aiBFS(state, transport.x, transport.y, target.x, target.y, 'sea');
         if (step) doMove(state, transport, step.x, step.y);
@@ -978,11 +996,12 @@ function runAILevel3(state) {
         if (lu.owner !== 2 || movedIds.has(lu.id)) continue;
         const luDef = UNIT_DEFS[lu.type];
         if (!luDef || luDef.domain !== 'land') continue;
+        // Stranded = can't reach any known enemy city by land, OR no enemy cities known yet
         let hasPath = false;
         for (const ec of enemyCities) {
           if (onSameLandmass(state, lu.x, lu.y, ec.x, ec.y)) { hasPath = true; break; }
         }
-        if (!hasPath && enemyCities.length > 0) { strandedUnit = lu; break; }
+        if (!hasPath) { strandedUnit = lu; break; } // pick up even if no enemy cities known yet
       }
       if (strandedUnit) {
         const step = aiBFS(state, transport.x, transport.y, strandedUnit.x, strandedUnit.y, 'sea');
